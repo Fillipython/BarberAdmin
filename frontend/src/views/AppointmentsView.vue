@@ -3,26 +3,26 @@
     <!-- Header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">Agendamentos & Atendimentos</h1>
+        <h1 class="page-title">Agendamentos</h1>
         <p class="page-subtitle">
           {{ isMaster 
-              ? 'Visualize a agenda de todos os profissionais e gerencie os atendimentos.' 
-              : 'Seus atendimentos agendados e histórico de cortes.' }}
+              ? 'Agenda geral de todos os profissionais da barbearia.' 
+              : 'Seus atendimentos agendados.' }}
         </p>
       </div>
 
       <button class="btn btn-primary" @click="openNewModal">
-        <span>✂️</span> Novo Atendimento
+        + Novo Agendamento
       </button>
     </div>
 
     <!-- Filters Bar -->
-    <div class="glass-card filters-bar">
+    <div class="clean-panel filters-bar">
       <!-- Master: Barber Filter -->
       <div v-if="isMaster" class="filter-group">
-        <label class="filter-label">Filtrar por Barbeiro:</label>
-        <select v-model="selectedBarberFilter" class="form-select filter-select">
-          <option value="ALL">👥 Todos os Barbeiros</option>
+        <label class="filter-label">Barbeiro:</label>
+        <select v-model="selectedBarberFilter" class="form-select">
+          <option value="ALL">Todos os Barbeiros</option>
           <option v-for="b in state.users" :key="b.id" :value="b.id">
             {{ b.name }} ({{ b.nickname }})
           </option>
@@ -32,13 +32,13 @@
       <!-- Date Filter -->
       <div class="filter-group">
         <label class="filter-label">Data:</label>
-        <input type="date" v-model="filterDate" class="form-input filter-date" />
+        <input type="date" v-model="filterDate" class="form-input" />
       </div>
 
       <!-- Status Filter -->
       <div class="filter-group">
         <label class="filter-label">Status:</label>
-        <select v-model="filterStatus" class="form-select filter-select">
+        <select v-model="filterStatus" class="form-select">
           <option value="ALL">Todos os Status</option>
           <option value="CONFIRMED">Agendados</option>
           <option value="COMPLETED">Concluídos</option>
@@ -49,22 +49,20 @@
 
     <!-- Appointments List -->
     <div class="appointments-container">
-      <div v-if="filteredAppointments.length === 0" class="glass-card empty-state">
-        <span class="empty-icon">📅</span>
-        <h3>Nenhum agendamento encontrado</h3>
-        <p>Não há atendimentos para os filtros selecionados nesta data.</p>
-        <button class="btn btn-primary btn-sm" @click="openNewModal">Criar Primeiro Agendamento</button>
+      <div v-if="filteredAppointments.length === 0" class="clean-panel empty-state">
+        <p class="empty-text">Nenhum agendamento encontrado para esta data.</p>
+        <button class="btn btn-secondary btn-sm" @click="openNewModal">Criar Agendamento</button>
       </div>
 
       <div v-else class="appointments-grid">
         <div 
           v-for="app in filteredAppointments" 
           :key="app.id" 
-          class="glass-card appointment-card glass-card-hover"
+          class="clean-panel appointment-card"
           :class="{ 'card-completed': app.status === 'COMPLETED' }"
         >
           <div class="app-card-header">
-            <div class="app-time-badge">
+            <div class="time-block">
               <span class="time-text">{{ app.scheduled_time || '09:00' }}</span>
               <span class="date-text">{{ app.scheduled_date }}</span>
             </div>
@@ -74,22 +72,22 @@
             </span>
           </div>
 
-          <div class="app-client-info">
-            <h3 class="client-name">{{ app.client_name }}</h3>
-            <span class="client-phone">📞 {{ app.client_phone }}</span>
-          </div>
+          <div class="app-body">
+            <div class="client-row">
+              <span class="client-name">{{ app.client_name }}</span>
+              <span class="client-phone">{{ app.client_phone }}</span>
+            </div>
 
-          <div class="app-service-info">
-            <div class="service-row">
-              <span class="service-name">✂️ {{ app.service_name }}</span>
-              <span class="service-price gold-text">{{ formatCurrency(app.price_cents) }}</span>
+            <div class="service-strip">
+              <div class="service-left">
+                <span class="service-name">{{ app.service_name }}</span>
+                <span class="assigned-barber">{{ app.barber_name }}</span>
+              </div>
+              <span class="service-val gold-text">{{ formatCurrency(app.price_cents) }}</span>
             </div>
-            <div class="barber-assigned">
-              <span class="assigned-label">Atendido por:</span>
-              <span class="assigned-name">{{ app.barber_name }}</span>
-            </div>
-            <div v-if="app.payment_method" class="payment-badge-wrap">
-              <span class="badge badge-emerald">Pago via {{ app.payment_method }}</span>
+
+            <div v-if="app.payment_method" class="payment-note">
+              Pago via {{ app.payment_method }}
             </div>
           </div>
 
@@ -122,11 +120,10 @@
         </div>
 
         <form @submit.prevent="handleSaveAppointment" class="modal-body">
-          <!-- Client Selection or typing -->
           <div class="form-group">
             <label class="form-label">Cliente Cadastrado</label>
             <select v-model="selectedClientId" @change="onClientSelect" class="form-select">
-              <option value="">-- Selecione ou digite abaixo --</option>
+              <option value="">-- Selecione ou preencha abaixo --</option>
               <option v-for="c in state.clients" :key="c.id" :value="c.id">
                 {{ c.name }} ({{ c.phone }})
               </option>
@@ -136,15 +133,14 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Nome do Cliente *</label>
-              <input v-model="form.client_name" required placeholder="Ex: Lucas Silva" class="form-input" />
+              <input v-model="form.client_name" required placeholder="Ex: Felipe Silva" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">WhatsApp / Telefone *</label>
+              <label class="form-label">Telefone / WhatsApp *</label>
               <input v-model="form.client_phone" required placeholder="Ex: 11999998888" class="form-input" />
             </div>
           </div>
 
-          <!-- Barber Selection -->
           <div class="form-group">
             <label class="form-label">Barbeiro Designado *</label>
             <select v-model="form.barber_id" required class="form-select" :disabled="!isMaster">
@@ -152,12 +148,11 @@
                 {{ b.name }} ({{ b.nickname }})
               </option>
             </select>
-            <small v-if="!isMaster" class="hint-text">Barbeiros comuns agendam em seu próprio nome.</small>
           </div>
 
           <!-- Service Selection with Dynamic Price Auto-fill and Override -->
           <div class="form-group highlight-box">
-            <label class="form-label">Tipo de Serviço *</label>
+            <label class="form-label">Serviço Selecionado *</label>
             <select v-model="form.service_id" @change="onServiceSelect" required class="form-select">
               <option value="">Selecione o serviço...</option>
               <option v-for="s in state.services.filter(s => s.is_active)" :key="s.id" :value="s.id">
@@ -166,8 +161,7 @@
             </select>
 
             <div class="price-override-wrap">
-              <label class="form-label">Valor do Atendimento (R$) *</label>
-              <p class="hint-text">Preenchido automaticamente pelo serviço, mas você pode mudar o valor livremente para este atendimento:</p>
+              <label class="form-label">Valor Cobrado (R$) *</label>
               <input 
                 type="number" 
                 step="0.50" 
@@ -175,6 +169,7 @@
                 required 
                 class="form-input price-input" 
               />
+              <span class="hint-text">Valor ajustável livremente para este atendimento.</span>
             </div>
           </div>
 
@@ -207,12 +202,17 @@
 
         <div class="modal-body">
           <div class="finish-summary">
-            <p><strong>Cliente:</strong> {{ completingApp.client_name }}</p>
-            <p><strong>Serviço:</strong> {{ completingApp.service_name }}</p>
-            <p><strong>Barbeiro:</strong> {{ completingApp.barber_name }}</p>
-            <div class="total-highlight">
-              <span>Valor a Receber:</span>
-              <span class="gold-text bold-text">{{ formatCurrency(completingApp.price_cents) }}</span>
+            <div class="summary-line">
+              <span>Cliente:</span>
+              <strong>{{ completingApp.client_name }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Serviço:</span>
+              <strong>{{ completingApp.service_name }}</strong>
+            </div>
+            <div class="summary-line total-line">
+              <span>Valor Total:</span>
+              <span class="gold-text bold">{{ formatCurrency(completingApp.price_cents) }}</span>
             </div>
           </div>
 
@@ -221,19 +221,19 @@
             <div class="payment-options">
               <label class="payment-option" :class="{ selected: completePaymentMethod === 'PIX' }">
                 <input type="radio" v-model="completePaymentMethod" value="PIX" />
-                <span>⚡ PIX</span>
+                <span>PIX</span>
               </label>
               <label class="payment-option" :class="{ selected: completePaymentMethod === 'DINHEIRO' }">
                 <input type="radio" v-model="completePaymentMethod" value="DINHEIRO" />
-                <span>💵 Dinheiro</span>
+                <span>Dinheiro</span>
               </label>
               <label class="payment-option" :class="{ selected: completePaymentMethod === 'CARTAO_CREDITO' }">
                 <input type="radio" v-model="completePaymentMethod" value="CARTAO_CREDITO" />
-                <span>💳 Crédito</span>
+                <span>Crédito</span>
               </label>
               <label class="payment-option" :class="{ selected: completePaymentMethod === 'CARTAO_DEBITO' }">
                 <input type="radio" v-model="completePaymentMethod" value="CARTAO_DEBITO" />
-                <span>💳 Débito</span>
+                <span>Débito</span>
               </label>
             </div>
           </div>
@@ -278,29 +278,12 @@ const form = ref({
   scheduled_time: '14:00'
 });
 
-// Filter appointments based on user role + active filters
 const filteredAppointments = computed(() => {
   return state.appointments.filter(app => {
-    // 1. Role Check
-    if (!isMaster.value && app.barber_id !== state.currentUser.id) {
-      return false;
-    }
-
-    // 2. Master Barber Filter
-    if (isMaster.value && selectedBarberFilter.value !== 'ALL' && app.barber_id !== selectedBarberFilter.value) {
-      return false;
-    }
-
-    // 3. Date Filter
-    if (filterDate.value && app.scheduled_date !== filterDate.value) {
-      return false;
-    }
-
-    // 4. Status Filter
-    if (filterStatus.value !== 'ALL' && app.status !== filterStatus.value) {
-      return false;
-    }
-
+    if (!isMaster.value && app.barber_id !== state.currentUser.id) return false;
+    if (isMaster.value && selectedBarberFilter.value !== 'ALL' && app.barber_id !== selectedBarberFilter.value) return false;
+    if (filterDate.value && app.scheduled_date !== filterDate.value) return false;
+    if (filterStatus.value !== 'ALL' && app.status !== filterStatus.value) return false;
     return true;
   });
 });
@@ -326,7 +309,6 @@ function onClientSelect() {
   }
 }
 
-// When service is picked, automatically set price to default service price, while allowing edits
 function onServiceSelect() {
   const service = state.services.find(s => s.id === form.value.service_id);
   if (service) {
@@ -394,7 +376,7 @@ function getStatusBadgeClass(status) {
 .appointments-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .page-header {
@@ -402,62 +384,58 @@ function getStatusBadgeClass(status) {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .page-title {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .page-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 .filters-bar {
-  padding: 1.25rem;
+  padding: 0.75rem 1rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
+  gap: 0.75rem;
   align-items: flex-end;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  min-width: 200px;
+  gap: 0.25rem;
+  min-width: 160px;
   flex: 1;
 }
 
 .filter-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text-tertiary);
 }
 
-.filter-select, .filter-date {
-  padding: 0.55rem 0.85rem;
-  font-size: 0.875rem;
-}
-
-/* Appointments Grid */
 .appointments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
 }
 
 .appointment-card {
-  padding: 1.25rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+  border-left: 2px solid var(--border-subtle);
 }
 
 .card-completed {
-  border-left: 4px solid var(--emerald-500);
+  border-left-color: var(--accent-emerald);
 }
 
 .app-card-header {
@@ -466,70 +444,89 @@ function getStatusBadgeClass(status) {
   align-items: center;
 }
 
-.app-time-badge {
+.time-block {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.time-text {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #fbbf24;
-  font-family: var(--font-display);
-}
-
-.date-text {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
-.app-client-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.client-name {
-  font-size: 1.1rem;
-  color: var(--text-main);
-}
-
-.client-phone {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.app-service-info {
-  background: var(--bg-dark);
-  padding: 0.85rem;
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
+  align-items: baseline;
   gap: 0.4rem;
 }
 
-.service-row {
+.time-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fbbf24;
+  font-family: var(--font-mono);
+}
+
+.date-text {
+  font-size: 0.725rem;
+  color: var(--text-tertiary);
+}
+
+.app-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.client-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.client-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.client-phone {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.service-strip {
+  background: #090c13;
+  border: 1px solid var(--border-subtle);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-xs);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
+}
+
+.service-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.assigned-barber {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.service-val {
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .gold-text {
   color: #fbbf24;
 }
 
-.barber-assigned {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--text-dim);
+.payment-note {
+  font-size: 0.7rem;
+  color: var(--accent-emerald);
+  font-weight: 500;
 }
 
 .app-card-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin-top: auto;
 }
 
@@ -538,119 +535,128 @@ function getStatusBadgeClass(status) {
 }
 
 .empty-state {
-  padding: 3rem 1.5rem;
+  padding: 2.5rem 1rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-.empty-icon {
-  font-size: 3rem;
+.empty-text {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
 }
 
 /* Modals */
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .highlight-box {
-  background: rgba(245, 158, 11, 0.05);
-  border: 1px dashed rgba(245, 158, 11, 0.3);
-  padding: 1rem;
-  border-radius: var(--radius-md);
+  background: rgba(217, 151, 38, 0.04);
+  border: 1px solid rgba(217, 151, 38, 0.2);
+  padding: 0.75rem;
+  border-radius: var(--radius-xs);
 }
 
 .price-override-wrap {
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .price-input {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #fbbf24;
 }
 
 .hint-text {
-  font-size: 0.75rem;
-  color: var(--text-dim);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  display: block;
+  margin-top: 0.25rem;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
-/* Finish modal */
 .finish-summary {
-  background: var(--bg-dark);
-  padding: 1rem;
-  border-radius: var(--radius-md);
+  background: #090c13;
+  border: 1px solid var(--border-subtle);
+  padding: 0.75rem;
+  border-radius: var(--radius-xs);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
-.total-highlight {
+.summary-line {
   display: flex;
   justify-content: space-between;
-  font-size: 1.2rem;
-  border-top: 1px solid var(--border-color);
-  padding-top: 0.5rem;
-  margin-top: 0.5rem;
+  font-size: 0.825rem;
 }
 
-.bold-text {
-  font-weight: 800;
+.total-line {
+  font-size: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.bold {
+  font-weight: 700;
 }
 
 .payment-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
 }
 
 .payment-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  background: #090c13;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
   cursor: pointer;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .payment-option.selected {
-  border-color: var(--gold-500);
-  background: var(--gold-glow);
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-dim);
 }
 </style>

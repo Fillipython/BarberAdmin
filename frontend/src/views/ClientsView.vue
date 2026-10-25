@@ -3,29 +3,28 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Clientes</h1>
-        <p class="page-subtitle">Carteira de clientes cadastrados, histórico de frequência e preferências.</p>
+        <p class="page-subtitle">Carteira de clientes e histórico de visitas.</p>
       </div>
 
       <button class="btn btn-primary" @click="showModal = true">
-        <span>👤</span> Novo Cliente
+        + Novo Cliente
       </button>
     </div>
 
-    <!-- Search & Stats Bar -->
-    <div class="glass-card header-bar">
+    <!-- Search & Counter -->
+    <div class="clean-panel header-bar">
       <div class="search-input-wrap">
-        <span class="search-icon">🔍</span>
         <input 
           v-model="searchQuery" 
           type="text" 
           placeholder="Buscar por nome ou WhatsApp..." 
-          class="form-input search-input" 
+          class="form-input" 
         />
       </div>
 
-      <div class="total-clients-counter">
-        <span class="counter-label">Total Cadastrado:</span>
-        <span class="counter-value">{{ state.clients.length }} clientes</span>
+      <div class="counter-text">
+        <span>Total:</span>
+        <strong>{{ state.clients.length }}</strong>
       </div>
     </div>
 
@@ -34,21 +33,21 @@
       <div 
         v-for="client in filteredClients" 
         :key="client.id" 
-        class="glass-card client-card glass-card-hover"
+        class="clean-panel client-card"
       >
         <div class="client-card-top">
-          <div class="avatar-initials">
+          <div class="avatar-box">
             {{ getInitials(client.name) }}
           </div>
           <div class="client-meta">
             <h3 class="client-name">{{ client.name }}</h3>
-            <span class="client-phone">📞 {{ client.phone }}</span>
-            <span v-if="client.email" class="client-email">✉️ {{ client.email }}</span>
+            <span class="client-phone">{{ client.phone }}</span>
+            <span v-if="client.email" class="client-email">{{ client.email }}</span>
           </div>
         </div>
 
         <div v-if="client.notes" class="client-notes">
-          <span class="notes-label">Preferência / Obs:</span>
+          <span class="notes-label">Preferência:</span>
           <p class="notes-text">"{{ client.notes }}"</p>
         </div>
 
@@ -58,7 +57,7 @@
             <span class="stat-mini-val">{{ client.total_visits }}</span>
           </div>
           <div class="stat-mini">
-            <span class="stat-mini-label">Total Consumido</span>
+            <span class="stat-mini-label">Total Gasto</span>
             <span class="stat-mini-val gold-text">{{ formatCurrency(client.total_spent_cents) }}</span>
           </div>
         </div>
@@ -75,33 +74,33 @@
     <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title">Cadastrar Novo Cliente</h2>
+          <h2 class="modal-title">Novo Cliente</h2>
           <button class="btn-icon btn-secondary" @click="showModal = false">✕</button>
         </div>
 
         <form @submit.prevent="handleSaveClient" class="modal-body">
           <div class="form-group">
             <label class="form-label">Nome Completo *</label>
-            <input v-model="form.name" required placeholder="Ex: Lucas Gabriel" class="form-input" />
+            <input v-model="form.name" required placeholder="Ex: Roberto Silva" class="form-input" />
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Telefone / WhatsApp *</label>
+              <label class="form-label">WhatsApp *</label>
               <input v-model="form.phone" required placeholder="Ex: 11988887777" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">Email (Opcional)</label>
+              <label class="form-label">Email</label>
               <input v-model="form.email" type="email" placeholder="cliente@email.com" class="form-input" />
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Preferências / Observações do Corte</label>
+            <label class="form-label">Observações / Preferências</label>
             <textarea 
               v-model="form.notes" 
-              rows="3" 
-              placeholder="Ex: Não gosta de navalha na nuca, usa barba desenhada..." 
+              rows="2" 
+              placeholder="Ex: Não passar navalha no pescoço..." 
               class="form-textarea"
             ></textarea>
           </div>
@@ -163,7 +162,7 @@ function handleSaveClient() {
 .clients-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .page-header {
@@ -171,87 +170,69 @@ function handleSaveClient() {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .page-title {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .page-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 .header-bar {
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 1rem;
 }
 
 .search-input-wrap {
-  position: relative;
   flex: 1;
-  min-width: 260px;
+  max-width: 380px;
 }
 
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-dim);
+.counter-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 0.35rem;
 }
 
-.search-input {
-  padding-left: 2.75rem;
-}
-
-.total-clients-counter {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-}
-
-.counter-value {
-  color: #fbbf24;
-  font-weight: 700;
-  margin-left: 0.35rem;
-}
-
-/* Clients Grid */
 .clients-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
 }
 
 .client-card {
-  padding: 1.25rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .client-card-top {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
-.avatar-initials {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.4));
-  border: 1px solid rgba(245, 158, 11, 0.5);
+.avatar-box {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #fbbf24;
   flex-shrink: 0;
 }
@@ -262,55 +243,55 @@ function handleSaveClient() {
 }
 
 .client-name {
-  font-size: 1.1rem;
-  color: var(--text-main);
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .client-phone, .client-email {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.725rem;
+  color: var(--text-secondary);
 }
 
 .client-notes {
-  background: var(--bg-dark);
-  padding: 0.75rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  background: #090c13;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
 }
 
 .notes-label {
-  font-weight: 700;
-  color: var(--text-dim);
+  font-size: 0.65rem;
   text-transform: uppercase;
-  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
   display: block;
-  margin-bottom: 0.2rem;
 }
 
 .notes-text {
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 .client-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-color);
-  padding: 0.75rem;
-  border-radius: var(--radius-sm);
+  background: #090c13;
+  border: 1px solid var(--border-subtle);
+  padding: 0.5rem;
+  border-radius: var(--radius-xs);
   text-align: center;
 }
 
 .stat-mini-label {
-  font-size: 0.725rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text-tertiary);
   display: block;
 }
 
 .stat-mini-val {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -326,38 +307,38 @@ function handleSaveClient() {
   width: 100%;
 }
 
-/* Modal */
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
 }
 </style>

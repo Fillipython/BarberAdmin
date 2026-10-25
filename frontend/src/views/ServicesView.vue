@@ -2,20 +2,20 @@
   <div class="services-page">
     <div class="page-header">
       <div>
-        <h1 class="page-title">Tabela de Serviços & Valores</h1>
+        <h1 class="page-title">Serviços & Preços</h1>
         <p class="page-subtitle">
           {{ isMaster 
-              ? 'Gerenciamento de serviços, durações e preços praticados na barbearia.' 
-              : 'Consulte os serviços disponíveis e tabela de preços vigentes.' }}
+              ? 'Tabela de serviços e valores praticados na barbearia.' 
+              : 'Lista de serviços disponíveis.' }}
         </p>
       </div>
 
       <button v-if="isMaster" class="btn btn-primary" @click="openNewModal">
-        <span>✂️</span> Adicionar Serviço
+        + Adicionar Serviço
       </button>
     </div>
 
-    <!-- Category filter tabs -->
+    <!-- Category Tabs -->
     <div class="category-tabs">
       <button 
         class="cat-btn" 
@@ -40,14 +40,14 @@
       <div 
         v-for="service in filteredServices" 
         :key="service.id" 
-        class="glass-card service-card glass-card-hover"
+        class="clean-panel service-card"
         :class="{ 'inactive-service': !service.is_active }"
       >
         <div class="service-top">
           <span class="badge" :class="getCategoryBadgeClass(service.category)">
             {{ service.category }}
           </span>
-          <span class="duration-tag">⏱️ {{ service.duration_minutes }} min</span>
+          <span class="duration-tag">{{ service.duration_minutes }} min</span>
         </div>
 
         <div class="service-body">
@@ -57,13 +57,13 @@
 
         <div class="service-bottom">
           <div class="price-box">
-            <span class="price-label">Valor:</span>
+            <span class="price-label">Preço:</span>
             <span class="price-val gold-text">{{ formatCurrency(service.price_cents) }}</span>
           </div>
 
           <div v-if="isMaster" class="service-actions">
             <button class="btn btn-secondary btn-sm" @click="openEditModal(service)">
-              ✏️ Editar
+              Editar
             </button>
             <button 
               class="btn btn-sm" 
@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <!-- MODAL: EDITAR / CRIAR SERVIÇO (MASTER) -->
+    <!-- MODAL: EDITAR / CRIAR SERVIÇO -->
     <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">
       <div class="modal-content">
         <div class="modal-header">
@@ -88,7 +88,7 @@
         <form @submit.prevent="handleSaveService" class="modal-body">
           <div class="form-group">
             <label class="form-label">Nome do Serviço *</label>
-            <input v-model="form.name" required placeholder="Ex: Degradê Navalhado" class="form-input" />
+            <input v-model="form.name" required placeholder="Ex: Corte Degrade" class="form-input" />
           </div>
 
           <div class="form-row">
@@ -110,7 +110,7 @@
           </div>
 
           <div class="form-group highlight-box">
-            <label class="form-label">Preço do Serviço (R$) *</label>
+            <label class="form-label">Preço (R$) *</label>
             <input 
               type="number" 
               step="0.50" 
@@ -121,8 +121,8 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Descrição (Opcional)</label>
-            <textarea v-model="form.description" rows="2" placeholder="Detalhes do procedimento..." class="form-textarea"></textarea>
+            <label class="form-label">Descrição</label>
+            <textarea v-model="form.description" rows="2" placeholder="Detalhes do serviço..." class="form-textarea"></textarea>
           </div>
 
           <div class="modal-footer">
@@ -230,7 +230,7 @@ function getCategoryBadgeClass(cat) {
 .services-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .page-header {
@@ -238,59 +238,60 @@ function getCategoryBadgeClass(cat) {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .page-title {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .page-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 .category-tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
 }
 
 .cat-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-full);
-  font-size: 0.825rem;
-  font-weight: 600;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
 }
 
 .cat-btn.active {
-  background: var(--gold-500);
-  color: #0b0f19;
-  border-color: var(--gold-500);
+  background: var(--bg-subtle);
+  color: var(--accent-gold);
+  border-color: var(--accent-gold);
+  font-weight: 600;
 }
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
 }
 
 .service-card {
-  padding: 1.25rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .inactive-service {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .service-top {
@@ -300,41 +301,41 @@ function getCategoryBadgeClass(cat) {
 }
 
 .duration-tag {
-  font-size: 0.75rem;
-  color: var(--text-dim);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
 }
 
 .service-title {
-  font-size: 1.15rem;
-  color: var(--text-main);
-  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
 }
 
 .service-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .service-bottom {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  border-top: 1px solid var(--border-color);
-  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.65rem;
   margin-top: auto;
 }
 
 .price-label {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text-tertiary);
   display: block;
 }
 
 .price-val {
-  font-size: 1.35rem;
-  font-weight: 800;
-  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .gold-text {
@@ -343,54 +344,54 @@ function getCategoryBadgeClass(cat) {
 
 .service-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
-/* Modal */
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .highlight-box {
-  background: rgba(245, 158, 11, 0.05);
-  border: 1px dashed rgba(245, 158, 11, 0.3);
-  padding: 1rem;
-  border-radius: var(--radius-md);
+  background: rgba(217, 151, 38, 0.04);
+  border: 1px solid rgba(217, 151, 38, 0.2);
+  padding: 0.75rem;
+  border-radius: var(--radius-xs);
 }
 
 .price-input {
-  font-size: 1.35rem;
-  font-weight: 800;
+  font-size: 1.15rem;
+  font-weight: 700;
   color: #fbbf24;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
 }
 </style>

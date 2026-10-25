@@ -1,117 +1,81 @@
 <template>
   <div class="app-layout">
-    <!-- TOP HEADER -->
-    <header class="app-header">
-      <div class="header-left">
+    <!-- COMPACT TOP BAR -->
+    <header class="app-topbar">
+      <!-- Upper minimal brand & profile row -->
+      <div class="top-row">
         <div class="brand">
-          <span class="brand-icon">💈</span>
-          <div class="brand-text">
-            <span class="brand-title">Barber<span class="gold-text">Admin</span></span>
-            <span class="brand-tag">Gestão Profissional</span>
-          </div>
+          <span class="brand-text">Barber<span class="gold-accent">Admin</span></span>
         </div>
-      </div>
 
-      <!-- Quick Role Switcher for instant testing -->
-      <div class="header-right">
-        <div class="role-switcher-card">
-          <span class="switch-label">Simular Usuário:</span>
+        <div class="profile-switch">
           <select 
             :value="state.currentUser.id" 
             @change="handleUserSwitch($event.target.value)" 
-            class="user-select"
+            class="profile-select"
           >
             <option v-for="u in state.users" :key="u.id" :value="u.id">
-              {{ u.role === 'MASTER' ? '👑' : '✂️' }} {{ u.name }} ({{ u.role }})
+              {{ u.role === 'MASTER' ? '👑' : '✂️' }} {{ u.nickname || u.name }}
             </option>
           </select>
         </div>
-
-        <div class="user-pill">
-          <img :src="state.currentUser.avatar_url" class="pill-avatar" />
-          <div class="pill-info">
-            <span class="pill-name">{{ state.currentUser.nickname || state.currentUser.name }}</span>
-            <span class="pill-role" :class="isMaster ? 'gold-role' : 'blue-role'">
-              {{ isMaster ? 'Barbeiro Master' : 'Barbeiro' }}
-            </span>
-          </div>
-        </div>
       </div>
+
+      <!-- ICON-ONLY SLEEK FIXED TOP TABS (100% WIDTH, NO SCROLLING REQUIRED) -->
+      <nav class="icon-nav-bar">
+        <router-link to="/" class="nav-btn" exact-active-class="active" title="Rendimento Diário">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="16"/>
+          </svg>
+          <span class="nav-caption">Rendimento</span>
+        </router-link>
+
+        <router-link to="/appointments" class="nav-btn" active-class="active" title="Agenda & Atendimentos">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="nav-caption">Agenda</span>
+        </router-link>
+
+        <router-link to="/clients" class="nav-btn" active-class="active" title="Clientes">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span class="nav-caption">Clientes</span>
+        </router-link>
+
+        <router-link to="/services" class="nav-btn" active-class="active" title="Serviços & Preços">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="6" cy="6" r="3"/>
+            <circle cx="6" cy="18" r="3"/>
+            <line x1="20" y1="4" x2="8.12" y2="15.88"/>
+            <line x1="14.47" y1="14.48" x2="20" y2="20"/>
+            <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+          </svg>
+          <span class="nav-caption">Serviços</span>
+        </router-link>
+
+        <router-link v-if="isMaster" to="/team" class="nav-btn" active-class="active" title="Equipe">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3 7h7l-5.5 4.5 2 7.5-6.5-5-6.5 5 2-7.5-5.5-4.5h7z"/>
+          </svg>
+          <span class="nav-caption">Equipe</span>
+        </router-link>
+      </nav>
     </header>
 
-    <!-- MAIN BODY: SIDEBAR + CONTENT -->
-    <div class="app-body">
-      <!-- DESKTOP SIDEBAR -->
-      <aside class="desktop-sidebar">
-        <nav class="nav-menu">
-          <router-link to="/" class="nav-item" exact-active-class="active">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">Rendimento Diário</span>
-          </router-link>
-
-          <router-link to="/appointments" class="nav-item" active-class="active">
-            <span class="nav-icon">📅</span>
-            <span class="nav-text">Agendamentos</span>
-          </router-link>
-
-          <router-link to="/clients" class="nav-item" active-class="active">
-            <span class="nav-icon">👥</span>
-            <span class="nav-text">Clientes</span>
-          </router-link>
-
-          <router-link to="/services" class="nav-item" active-class="active">
-            <span class="nav-icon">✂️</span>
-            <span class="nav-text">Serviços & Preços</span>
-          </router-link>
-
-          <!-- Master Only Navigation Item -->
-          <router-link v-if="isMaster" to="/team" class="nav-item" active-class="active">
-            <span class="nav-icon">👑</span>
-            <span class="nav-text">Equipe & Barbeiros</span>
-          </router-link>
-        </nav>
-
-        <div class="sidebar-footer">
-          <div class="app-status-box">
-            <span class="pulse-dot"></span>
-            <span>Pronto para App Externo (PWA / Mobile)</span>
-          </div>
-        </div>
-      </aside>
-
-      <!-- MAIN ROUTE VIEW -->
-      <main class="main-content">
-        <router-view />
-      </main>
-    </div>
-
-    <!-- MOBILE NATIVE-STYLE BOTTOM BAR -->
-    <nav class="mobile-bottom-bar">
-      <router-link to="/" class="mobile-nav-item" exact-active-class="active">
-        <span class="mobile-nav-icon">📊</span>
-        <span class="mobile-nav-label">Rendimento</span>
-      </router-link>
-
-      <router-link to="/appointments" class="mobile-nav-item" active-class="active">
-        <span class="mobile-nav-icon">📅</span>
-        <span class="mobile-nav-label">Agenda</span>
-      </router-link>
-
-      <router-link to="/clients" class="mobile-nav-item" active-class="active">
-        <span class="mobile-nav-icon">👥</span>
-        <span class="mobile-nav-label">Clientes</span>
-      </router-link>
-
-      <router-link to="/services" class="mobile-nav-item" active-class="active">
-        <span class="mobile-nav-icon">✂️</span>
-        <span class="mobile-nav-label">Serviços</span>
-      </router-link>
-
-      <router-link v-if="isMaster" to="/team" class="mobile-nav-item" active-class="active">
-        <span class="mobile-nav-icon">👑</span>
-        <span class="mobile-nav-label">Equipe</span>
-      </router-link>
-    </nav>
+    <!-- CONTENT -->
+    <main class="app-main">
+      <router-view />
+    </main>
   </div>
 </template>
 
@@ -128,277 +92,118 @@ function handleUserSwitch(userId) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: var(--bg-app);
 }
 
-/* Header */
-.app-header {
-  height: 68px;
-  background: rgba(11, 15, 25, 0.95);
-  border-bottom: 1px solid var(--border-color);
-  backdrop-filter: blur(12px);
+.app-topbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 300;
+  background: #0b0e14;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.brand-icon {
-  font-size: 1.75rem;
-}
-
-.brand-title {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
+.brand-text {
+  font-size: 0.95rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.gold-text {
+.gold-accent {
+  color: var(--accent-gold);
+}
+
+.profile-select {
+  background: #121722;
+  border: 1px solid var(--border-subtle);
   color: #fbbf24;
-}
-
-.brand-tag {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-dim);
-  display: block;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.role-switcher-card {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--bg-card);
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-}
-
-.switch-label {
   font-size: 0.75rem;
-  color: var(--text-dim);
   font-weight: 600;
-}
-
-.user-select {
-  background: transparent;
-  border: none;
-  color: #fbbf24;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-xs);
   outline: none;
+  cursor: pointer;
 }
 
-.user-select option {
-  background: var(--bg-card);
-  color: var(--text-main);
+.profile-select option {
+  background: #121722;
+  color: #f1f5f9;
 }
 
-.user-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding-left: 0.75rem;
-  border-left: 1px solid var(--border-color);
-}
-
-.pill-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-full);
-  object-fit: cover;
-  border: 2px solid var(--gold-500);
-}
-
-.pill-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.pill-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.pill-role {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.gold-role { color: #fbbf24; }
-.blue-role { color: #60a5fa; }
-
-/* Body Layout */
-.app-body {
-  display: flex;
-  flex: 1;
-}
-
-/* Desktop Sidebar */
-.desktop-sidebar {
-  width: 250px;
-  background: var(--bg-dark);
-  border-right: 1px solid var(--border-color);
-  padding: 1.5rem 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.nav-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-main);
-}
-
-.nav-item.active {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.25));
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  color: #fbbf24;
-}
-
-.nav-icon {
-  font-size: 1.2rem;
-}
-
-.sidebar-footer {
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.app-status-box {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.725rem;
-  color: var(--text-dim);
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--emerald-500);
-  box-shadow: 0 0 8px var(--emerald-500);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
-}
-
-/* Main Content */
-.main-content {
-  flex: 1;
-  padding: 1.75rem 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+/* FIXED GRID NAVIGATION: FITS ALL SCREENS WITHOUT SCROLLING */
+.icon-nav-bar {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 0.25rem;
 }
 
-/* Mobile Bottom Bar (Hidden on Desktop) */
-.mobile-bottom-bar {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: rgba(11, 15, 25, 0.96);
-  border-top: 1px solid var(--border-color);
-  backdrop-filter: blur(12px);
-  z-index: 100;
-  padding-bottom: var(--safe-bottom);
-  justify-content: space-around;
-  align-items: center;
-}
-
-.mobile-nav-item {
+.nav-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.2rem;
-  color: var(--text-dim);
+  padding: 0.5rem 0.25rem;
+  color: var(--text-tertiary);
   text-decoration: none;
-  flex: 1;
-  padding: 0.35rem 0;
-  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
 }
 
-.mobile-nav-item.active {
-  color: #fbbf24;
+.nav-btn:hover {
+  color: var(--text-secondary);
 }
 
-.mobile-nav-icon {
-  font-size: 1.25rem;
+.nav-btn.active {
+  color: var(--accent-gold);
+  border-bottom-color: var(--accent-gold);
 }
 
-.mobile-nav-label {
+.nav-svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
+}
+
+.nav-caption {
   font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
-/* Mobile Responsive */
-@media (max-width: 860px) {
-  .desktop-sidebar {
-    display: none;
-  }
+.app-main {
+  flex: 1;
+  padding: 1rem 0.85rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
 
-  .mobile-bottom-bar {
-    display: flex;
+@media (max-width: 480px) {
+  .top-row {
+    padding: 0.4rem 0.75rem;
   }
-
-  .main-content {
-    padding: 1.25rem 1rem 80px 1rem;
+  .nav-btn {
+    padding: 0.45rem 0.15rem;
   }
-
-  .role-switcher-card .switch-label {
-    display: none;
+  .nav-svg {
+    width: 17px;
+    height: 17px;
   }
-
-  .pill-info {
-    display: none;
+  .nav-caption {
+    font-size: 0.62rem;
   }
 }
 </style>

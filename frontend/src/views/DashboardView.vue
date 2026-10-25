@@ -1,201 +1,235 @@
 <template>
-  <div class="dashboard-page">
-    <!-- Top Action Bar -->
-    <div class="page-header">
-      <div>
-        <div class="user-greeting">
-          <span class="greeting-badge" :class="isMaster ? 'badge-gold' : 'badge-blue'">
-            {{ isMaster ? 'Painel Master' : 'Espaço do Barbeiro' }}
-          </span>
-          <h1 class="page-title">Olá, {{ state.currentUser.nickname || state.currentUser.name }}</h1>
-        </div>
-        <p class="page-subtitle">
-          {{ isMaster 
-              ? 'Acompanhamento financeiro em tempo real e rendimento diário de toda a barbearia.' 
-              : 'Seu resumo diário de atendimentos e comissões acumuladas.' }}
-        </p>
-      </div>
-
-      <!-- Controls: Date filter & View Toggle -->
-      <div class="header-controls">
-        <div class="view-toggle">
+  <div class="dashboard-container">
+    <!-- Top Filter Bar -->
+    <div class="filter-row clean-panel">
+      <div class="filter-controls">
+        <!-- View Mode: Dia vs Mês -->
+        <div class="segmented-control">
           <button 
-            class="toggle-btn" 
-            :class="{ active: activeTab === 'daily' }" 
-            @click="activeTab = 'daily'"
+            class="seg-btn" 
+            :class="{ active: viewPeriod === 'day' }" 
+            @click="viewPeriod = 'day'"
           >
             Diário
           </button>
           <button 
-            v-if="isMaster"
-            class="toggle-btn" 
-            :class="{ active: activeTab === 'monthly' }" 
-            @click="activeTab = 'monthly'"
+            class="seg-btn" 
+            :class="{ active: viewPeriod === 'month' }" 
+            @click="viewPeriod = 'month'"
           >
-            Histórico Mensal
+            Mensal
           </button>
         </div>
 
-        <div v-if="activeTab === 'daily'" class="date-picker-wrap">
-          <input type="date" v-model="selectedDate" class="form-input form-input-sm" />
-        </div>
-      </div>
-    </div>
-
-    <!-- DAILY VIEW -->
-    <div v-if="activeTab === 'daily'" class="tab-content">
-      <!-- KPI Stats Grid -->
-      <div class="kpi-grid">
-        <!-- Card 1: Faturamento Bruto / Rendimento -->
-        <div class="glass-card stat-card border-gold">
-          <div class="stat-icon-wrap gold-glow">
-            <span class="icon-text">💰</span>
-          </div>
-          <div class="stat-info">
-            <span class="stat-label">
-              {{ isMaster ? 'Rendimento Total (Dia)' : 'Sua Produção (Dia)' }}
-            </span>
-            <h2 class="stat-value gold-text">{{ formatCurrency(dailyMetrics.totalGross) }}</h2>
-            <span class="stat-sub">
-              {{ isMaster ? 'Total bruto de todos os barbeiros' : 'Valor dos cortes realizados por você' }}
-            </span>
-          </div>
+        <!-- Date selector (if Day) -->
+        <div v-if="viewPeriod === 'day'" class="picker-wrap">
+          <label class="picker-label">Data:</label>
+          <input type="date" v-model="selectedDate" class="input-flat" />
         </div>
 
-        <!-- Card 2: Comissão / Ganho Líquido -->
-        <div class="glass-card stat-card border-emerald">
-          <div class="stat-icon-wrap emerald-glow">
-            <span class="icon-text">📈</span>
-          </div>
-          <div class="stat-info">
-            <span class="stat-label">
-              {{ isMaster ? 'Líquido Barbearia (Caixa)' : 'Sua Comissão' }}
-            </span>
-            <h2 class="stat-value emerald-text">
-              {{ formatCurrency(isMaster ? dailyMetrics.shopNet : dailyMetrics.barberCommission) }}
-            </h2>
-            <span class="stat-sub">
-              {{ isMaster ? 'Após repasse das comissões' : `${state.currentUser.commission_percentage}% sobre seus serviços` }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Card 3: Atendimentos Concluídos -->
-        <div class="glass-card stat-card border-blue">
-          <div class="stat-icon-wrap blue-glow">
-            <span class="icon-text">✂️</span>
-          </div>
-          <div class="stat-info">
-            <span class="stat-label">Atendimentos do Dia</span>
-            <h2 class="stat-value blue-text">{{ dailyMetrics.completedCount }}</h2>
-            <span class="stat-sub">{{ dailyMetrics.pendingCount }} agendamentos restantes</span>
-          </div>
-        </div>
-
-        <!-- Card 4: Ticket Médio -->
-        <div class="glass-card stat-card border-rose">
-          <div class="stat-icon-wrap rose-glow">
-            <span class="icon-text">🏷️</span>
-          </div>
-          <div class="stat-info">
-            <span class="stat-label">Ticket Médio</span>
-            <h2 class="stat-value rose-text">{{ formatCurrency(dailyMetrics.averageTicket) }}</h2>
-            <span class="stat-sub">Média por cliente atendido</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Payment Breakdown (Master or Staff) -->
-      <div class="payment-methods-card glass-card">
-        <h3 class="card-title">Distribuição por Forma de Pagamento (Hoje)</h3>
-        <div class="methods-grid">
-          <div class="method-box">
-            <span class="method-tag tag-pix">⚡ PIX</span>
-            <span class="method-val">{{ formatCurrency(dailyMetrics.pix) }}</span>
-          </div>
-          <div class="method-box">
-            <span class="method-tag tag-card">💳 Cartão de Crédito</span>
-            <span class="method-val">{{ formatCurrency(dailyMetrics.creditCard) }}</span>
-          </div>
-          <div class="method-box">
-            <span class="method-tag tag-debit">💳 Cartão de Débito</span>
-            <span class="method-val">{{ formatCurrency(dailyMetrics.debitCard) }}</span>
-          </div>
-          <div class="method-box">
-            <span class="method-tag tag-cash">💵 Dinheiro em Espécie</span>
-            <span class="method-val">{{ formatCurrency(dailyMetrics.cash) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Performance by Barber (Exclusivo Master) -->
-      <div v-if="isMaster" class="team-perf-card glass-card">
-        <div class="card-header-flex">
-          <div>
-            <h3 class="card-title">Desempenho dos Barbeiros no Dia</h3>
-            <p class="card-desc">Produção individual e rateio de comissões calculados automaticamente.</p>
-          </div>
-          <router-link to="/appointments" class="btn btn-secondary btn-sm">Ver Todos os Agendamentos</router-link>
-        </div>
-
-        <div class="table-responsive">
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>Barbeiro</th>
-                <th>Cortes/Serviços</th>
-                <th>Total Bruto</th>
-                <th>Comissão Repassada</th>
-                <th>Líquido Barbearia</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="barber in barbersPerformance" :key="barber.id">
-                <td class="barber-cell">
-                  <img :src="barber.avatar_url" class="avatar-sm" />
-                  <div>
-                    <span class="barber-name">{{ barber.name }}</span>
-                    <span class="barber-nick">{{ barber.nickname }}</span>
-                  </div>
-                </td>
-                <td><span class="count-badge">{{ barber.count }} atendimentos</span></td>
-                <td class="bold-text">{{ formatCurrency(barber.gross) }}</td>
-                <td class="emerald-text">{{ formatCurrency(barber.commission) }}</td>
-                <td class="gold-text">{{ formatCurrency(barber.shopNet) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- MONTHLY HISTORICAL VIEW (MASTER ONLY) -->
-    <div v-else-if="activeTab === 'monthly' && isMaster" class="tab-content">
-      <div class="glass-card monthly-card">
-        <div class="card-header-flex">
-          <div>
-            <h3 class="card-title">Histórico Mensal Consolidado</h3>
-            <p class="card-desc">Acompanhe a evolução de receita mês a mês para planejar o crescimento da barbearia.</p>
-          </div>
-          <select v-model="selectedYear" class="form-select form-select-sm year-select">
-            <option :value="2026">Ano 2026</option>
-            <option :value="2025">Ano 2025</option>
+        <!-- Month selector (if Month) -->
+        <div v-else class="picker-wrap">
+          <label class="picker-label">Mês:</label>
+          <select v-model="selectedMonth" class="input-flat">
+            <option v-for="(m, idx) in monthsList" :key="idx" :value="idx + 1">
+              {{ m }} / 2026
+            </option>
           </select>
         </div>
+      </div>
 
-        <div class="monthly-grid">
-          <div v-for="m in monthlyHistory" :key="m.monthName" class="month-box glass-card-hover">
-            <div class="month-head">
-              <span class="month-title">{{ m.monthName }}</span>
-              <span class="month-count">{{ m.totalOrders }} atendimentos</span>
+      <div class="period-summary-text">
+        <span>Exibindo:</span>
+        <strong>{{ periodLabel }}</strong>
+      </div>
+    </div>
+
+    <!-- MAIN FINANCIAL HERO (RENDIMENTO) -->
+    <div class="clean-panel hero-finance">
+      <div class="finance-primary">
+        <span class="finance-subtitle">
+          {{ isMaster 
+              ? (viewPeriod === 'day' ? 'Rendimento Total do Dia' : 'Rendimento Total do Mês') 
+              : 'Sua Produção no Período' }}
+        </span>
+        <div class="finance-value gold-text">
+          {{ formatCurrency(currentMetrics.totalGross) }}
+        </div>
+      </div>
+
+      <div class="finance-breakdown-row">
+        <div class="breakdown-col">
+          <span class="breakdown-label">
+            {{ isMaster ? 'Líquido Barbearia' : 'Sua Comissão' }}
+          </span>
+          <span class="breakdown-value emerald-text">
+            {{ formatCurrency(isMaster ? currentMetrics.shopNet : currentMetrics.barberCommission) }}
+          </span>
+        </div>
+
+        <div v-if="isMaster" class="breakdown-col">
+          <span class="breakdown-label">Comissões da Equipe</span>
+          <span class="breakdown-value">
+            {{ formatCurrency(currentMetrics.barberCommission) }}
+          </span>
+        </div>
+
+        <div class="breakdown-col">
+          <span class="breakdown-label">Atendimentos</span>
+          <span class="breakdown-value">{{ currentMetrics.completedCount }}</span>
+        </div>
+
+        <div class="breakdown-col">
+          <span class="breakdown-label">Ticket Médio</span>
+          <span class="breakdown-value">{{ formatCurrency(currentMetrics.averageTicket) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPARISON CHARTS (PIE / DONUT CHARTS) -->
+    <div class="charts-row">
+      <!-- Donut Chart 1: Formas de Pagamento -->
+      <div class="clean-panel chart-box">
+        <div class="chart-header">
+          <h3 class="chart-title">Comparativo por Pagamento</h3>
+          <span class="chart-sub">Distribuição da receita</span>
+        </div>
+
+        <div v-if="currentMetrics.totalGross === 0" class="no-data-chart">
+          Sem movimentações no período selecionado
+        </div>
+
+        <div v-else class="chart-layout">
+          <!-- SVG Pie / Donut -->
+          <div class="svg-wrap">
+            <svg viewBox="0 0 100 100" class="donut-svg">
+              <circle
+                v-for="slice in paymentDonutSlices"
+                :key="slice.key"
+                cx="50"
+                cy="50"
+                r="36"
+                fill="transparent"
+                :stroke="slice.color"
+                stroke-width="14"
+                :stroke-dasharray="`${slice.dash} ${100 - slice.dash}`"
+                :stroke-dashoffset="slice.offset"
+              />
+            </svg>
+            <div class="donut-center">
+              <span class="center-count">{{ currentMetrics.completedCount }}</span>
+              <span class="center-sub">vendas</span>
             </div>
-            <div class="month-value">{{ formatCurrency(m.grossRevenue) }}</div>
-            <div class="month-breakdown">
-              <span>Comissões: {{ formatCurrency(m.totalCommissions) }}</span>
-              <span class="emerald-text">Líquido: {{ formatCurrency(m.shopNet) }}</span>
+          </div>
+
+          <!-- Legend -->
+          <div class="chart-legend">
+            <div 
+              v-for="item in paymentBreakdown" 
+              :key="item.label" 
+              class="legend-item"
+            >
+              <div class="legend-color" :style="{ backgroundColor: item.color }"></div>
+              <div class="legend-info">
+                <span class="legend-name">{{ item.label }}</span>
+                <span class="legend-val">{{ formatCurrency(item.value) }} ({{ item.percent }}%)</span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Donut Chart 2: Produção por Barbeiro (Master) ou Divisão de Ganho (Staff) -->
+      <div class="clean-panel chart-box">
+        <div class="chart-header">
+          <h3 class="chart-title">
+            {{ isMaster ? 'Participação por Barbeiro' : 'Divisão de Receita' }}
+          </h3>
+          <span class="chart-sub">
+            {{ isMaster ? 'Comparação entre profissionais' : 'Sua comissão vs Barbearia' }}
+          </span>
+        </div>
+
+        <div v-if="currentMetrics.totalGross === 0" class="no-data-chart">
+          Sem movimentações no período selecionado
+        </div>
+
+        <div v-else class="chart-layout">
+          <!-- SVG Pie / Donut -->
+          <div class="svg-wrap">
+            <svg viewBox="0 0 100 100" class="donut-svg">
+              <circle
+                v-for="slice in secondaryDonutSlices"
+                :key="slice.key"
+                cx="50"
+                cy="50"
+                r="36"
+                fill="transparent"
+                :stroke="slice.color"
+                stroke-width="14"
+                :stroke-dasharray="`${slice.dash} ${100 - slice.dash}`"
+                :stroke-dashoffset="slice.offset"
+              />
+            </svg>
+            <div class="donut-center">
+              <span class="center-count">{{ secondaryChartItems.length }}</span>
+              <span class="center-sub">{{ isMaster ? 'barbeiros' : 'partes' }}</span>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="chart-legend">
+            <div 
+              v-for="item in secondaryChartItems" 
+              :key="item.label" 
+              class="legend-item"
+            >
+              <div class="legend-color" :style="{ backgroundColor: item.color }"></div>
+              <div class="legend-info">
+                <span class="legend-name">{{ item.label }}</span>
+                <span class="legend-val">{{ formatCurrency(item.value) }} ({{ item.percent }}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT TRANSACTIONS / SERVICES COMPLETED -->
+    <div class="clean-panel list-panel">
+      <div class="panel-header-simple">
+        <h3 class="panel-heading">Atendimentos Concluídos no Período</h3>
+      </div>
+
+      <div v-if="periodAppointments.length === 0" class="empty-list-row">
+        Nenhum atendimento concluído encontrado para este período.
+      </div>
+
+      <div v-else class="table-wrap">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>Horário</th>
+              <th>Cliente</th>
+              <th v-if="isMaster">Barbeiro</th>
+              <th>Serviço</th>
+              <th>Pagamento</th>
+              <th class="text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="app in periodAppointments" :key="app.id">
+              <td class="text-mono">{{ app.scheduled_time || '09:00' }}</td>
+              <td class="bold">{{ app.client_name }}</td>
+              <td v-if="isMaster">{{ app.barber_name }}</td>
+              <td>{{ app.service_name }}</td>
+              <td>
+                <span class="method-tag">{{ app.payment_method || 'PIX' }}</span>
+              </td>
+              <td class="text-right bold gold-text">{{ formatCurrency(app.price_cents) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -205,21 +239,48 @@
 import { ref, computed } from 'vue';
 import { state, isMaster, formatCurrency } from '../store/state.js';
 
-const activeTab = ref('daily');
+const viewPeriod = ref('day'); // 'day' | 'month'
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
-const selectedYear = ref(2026);
+const selectedMonth = ref(10); // Outubro
 
-// Filtered appointments based on selected date & current user role
-const filteredAppointments = computed(() => {
-  return state.appointments.filter(a => {
-    const matchDate = a.scheduled_date === selectedDate.value;
-    if (!matchDate) return false;
-    if (isMaster.value) return true;
-    return a.barber_id === state.currentUser.id;
+const monthsList = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const periodLabel = computed(() => {
+  if (viewPeriod.value === 'day') {
+    const parts = selectedDate.value.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return selectedDate.value;
+  }
+  return `${monthsList[selectedMonth.value - 1]} de 2026`;
+});
+
+// Filter appointments for the period
+const periodAppointments = computed(() => {
+  return state.appointments.filter(app => {
+    if (app.status !== 'COMPLETED') return false;
+
+    // Master sees all; staff sees only his own
+    if (!isMaster.value && app.barber_id !== state.currentUser.id) {
+      return false;
+    }
+
+    if (viewPeriod.value === 'day') {
+      return app.scheduled_date === selectedDate.value;
+    } else {
+      // Month match (e.g. "2026-10-xx")
+      const monthStr = String(selectedMonth.value).padStart(2, '0');
+      return app.scheduled_date && app.scheduled_date.startsWith(`2026-${monthStr}`);
+    }
   });
 });
 
-const dailyMetrics = computed(() => {
+// Metrics
+const currentMetrics = computed(() => {
   let totalGross = 0;
   let barberCommission = 0;
   let shopNet = 0;
@@ -227,32 +288,25 @@ const dailyMetrics = computed(() => {
   let creditCard = 0;
   let debitCard = 0;
   let cash = 0;
-  let completedCount = 0;
-  let pendingCount = 0;
 
-  filteredAppointments.value.forEach(app => {
-    if (app.status === 'COMPLETED') {
-      completedCount++;
-      const price = app.price_cents || 0;
-      totalGross += price;
+  periodAppointments.value.forEach(app => {
+    const price = app.price_cents || 0;
+    totalGross += price;
 
-      // Find barber for commission rate
-      const barber = state.users.find(u => u.id === app.barber_id);
-      const rate = (barber?.commission_percentage || 50) / 100;
-      const commission = Math.round(price * rate);
-      barberCommission += commission;
-      shopNet += (price - commission);
+    const barber = state.users.find(u => u.id === app.barber_id);
+    const rate = (barber?.commission_percentage || 50) / 100;
+    const comm = Math.round(price * rate);
+    barberCommission += comm;
+    shopNet += (price - comm);
 
-      if (app.payment_method === 'PIX') pix += price;
-      else if (app.payment_method === 'CARTAO_CREDITO') creditCard += price;
-      else if (app.payment_method === 'CARTAO_DEBITO') debitCard += price;
-      else if (app.payment_method === 'DINHEIRO') cash += price;
-      else pix += price; // default fallback
-    } else if (app.status !== 'CANCELLED') {
-      pendingCount++;
-    }
+    if (app.payment_method === 'PIX') pix += price;
+    else if (app.payment_method === 'CARTAO_CREDITO') creditCard += price;
+    else if (app.payment_method === 'CARTAO_DEBITO') debitCard += price;
+    else if (app.payment_method === 'DINHEIRO') cash += price;
+    else pix += price;
   });
 
+  const completedCount = periodAppointments.value.length;
   const averageTicket = completedCount > 0 ? Math.round(totalGross / completedCount) : 0;
 
   return {
@@ -264,354 +318,432 @@ const dailyMetrics = computed(() => {
     debitCard,
     cash,
     completedCount,
-    pendingCount,
     averageTicket
   };
 });
 
-// Barbers breakdown for Master
-const barbersPerformance = computed(() => {
-  return state.users.filter(u => u.is_active).map(barber => {
-    const barberApps = filteredAppointments.value.filter(
-      a => a.barber_id === barber.id && a.status === 'COMPLETED'
-    );
-    const count = barberApps.length;
-    const gross = barberApps.reduce((acc, a) => acc + (a.price_cents || 0), 0);
-    const commission = Math.round(gross * (barber.commission_percentage / 100));
-    const shopNet = gross - commission;
+// Payment Breakdown for Donut Chart 1
+const paymentBreakdown = computed(() => {
+  const total = currentMetrics.value.totalGross || 1;
+  const items = [
+    { label: 'PIX', value: currentMetrics.value.pix, color: '#10b981' },
+    { label: 'Cartão Crédito', value: currentMetrics.value.creditCard, color: '#38bdf8' },
+    { label: 'Cartão Débito', value: currentMetrics.value.debitCard, color: '#818cf8' },
+    { label: 'Dinheiro', value: currentMetrics.value.cash, color: '#fbbf24' }
+  ].filter(i => i.value > 0);
+
+  return items.map(item => ({
+    ...item,
+    percent: Math.round((item.value / total) * 100)
+  }));
+});
+
+// Generate SVG circle dash offsets for Donut Chart 1
+// Circumference of radius 36 is ~226.2, we normalize to 100 in stroke-dasharray (circumference 226)
+const paymentDonutSlices = computed(() => {
+  const total = currentMetrics.value.totalGross;
+  if (!total) return [];
+
+  let accumulated = 0;
+  const circumference = 226.19;
+
+  return paymentBreakdown.value.map(item => {
+    const ratio = item.value / total;
+    const dash = ratio * circumference;
+    const offset = -accumulated;
+    accumulated += dash;
 
     return {
-      ...barber,
-      count,
-      gross,
-      commission,
-      shopNet
+      key: item.label,
+      color: item.color,
+      dash,
+      offset
     };
   });
 });
 
-// Monthly mock/aggregate history for demonstration
-const monthlyHistory = computed(() => {
-  const months = [
-    { monthName: 'Janeiro', totalOrders: 142, grossRevenue: 685000, totalCommissions: 342500, shopNet: 342500 },
-    { monthName: 'Fevereiro', totalOrders: 158, grossRevenue: 760000, totalCommissions: 380000, shopNet: 380000 },
-    { monthName: 'Março', totalOrders: 180, grossRevenue: 890000, totalCommissions: 445000, shopNet: 445000 },
-    { monthName: 'Abril', totalOrders: 195, grossRevenue: 980000, totalCommissions: 490000, shopNet: 490000 },
-    { monthName: 'Maio', totalOrders: 210, grossRevenue: 1050000, totalCommissions: 525000, shopNet: 525000 },
-    { monthName: 'Junho', totalOrders: 230, grossRevenue: 1180000, totalCommissions: 590000, shopNet: 590000 },
-    { monthName: 'Julho', totalOrders: 245, grossRevenue: 1250000, totalCommissions: 625000, shopNet: 625000 },
-    { monthName: 'Agosto', totalOrders: 260, grossRevenue: 1320000, totalCommissions: 660000, shopNet: 660000 },
-    { monthName: 'Setembro', totalOrders: 275, grossRevenue: 1410000, totalCommissions: 705000, shopNet: 705000 },
-    { monthName: 'Outubro (Atual)', totalOrders: 190, grossRevenue: 950000, totalCommissions: 475000, shopNet: 475000 }
-  ];
-  return months;
+// Secondary Chart Items (Master: Barbers Comparison; Staff: Commission vs Shop)
+const secondaryChartItems = computed(() => {
+  const total = currentMetrics.value.totalGross || 1;
+
+  if (isMaster.value) {
+    const palette = ['#d99726', '#38bdf8', '#a855f7', '#10b981'];
+    return state.users.filter(u => u.is_active).map((b, idx) => {
+      const bApps = periodAppointments.value.filter(a => a.barber_id === b.id);
+      const val = bApps.reduce((acc, a) => acc + (a.price_cents || 0), 0);
+      return {
+        label: b.nickname || b.name,
+        value: val,
+        color: palette[idx % palette.length],
+        percent: Math.round((val / total) * 100)
+      };
+    }).filter(i => i.value > 0);
+  } else {
+    return [
+      {
+        label: 'Sua Comissão',
+        value: currentMetrics.value.barberCommission,
+        color: '#10b981',
+        percent: Math.round((currentMetrics.value.barberCommission / total) * 100)
+      },
+      {
+        label: 'Barbearia',
+        value: currentMetrics.value.shopNet,
+        color: '#d99726',
+        percent: Math.round((currentMetrics.value.shopNet / total) * 100)
+      }
+    ];
+  }
+});
+
+const secondaryDonutSlices = computed(() => {
+  const total = currentMetrics.value.totalGross;
+  if (!total) return [];
+
+  let accumulated = 0;
+  const circumference = 226.19;
+
+  return secondaryChartItems.value.map(item => {
+    const ratio = item.value / total;
+    const dash = ratio * circumference;
+    const offset = -accumulated;
+    accumulated += dash;
+
+    return {
+      key: item.label,
+      color: item.color,
+      dash,
+      offset
+    };
+  });
 });
 </script>
 
 <style scoped>
-.dashboard-page {
+.dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
   gap: 1rem;
 }
 
-.user-greeting {
+/* Filter Row */
+.filter-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  padding: 0.65rem 1rem;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 0.35rem;
 }
 
-.page-title {
-  font-size: 1.75rem;
-  color: var(--text-main);
-}
-
-.page-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  max-width: 600px;
-}
-
-.header-controls {
+.filter-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.view-toggle {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 0.25rem;
-  border-radius: var(--radius-md);
+.segmented-control {
   display: flex;
+  background: #080a0f;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 2px;
+}
+
+.seg-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.seg-btn.active {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.picker-label {
+  font-size: 0.725rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.input-flat {
+  background: #080a0f;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 0.35rem 0.6rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.period-summary-text {
+  font-size: 0.785rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* HERO FINANCIAL CARD */
+.hero-finance {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  border-left: 3px solid var(--accent-gold);
+}
+
+.finance-primary {
+  display: flex;
+  flex-direction: column;
   gap: 0.25rem;
 }
 
-.toggle-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 0.45rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+.finance-subtitle {
+  font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
 }
 
-.toggle-btn.active {
-  background: var(--gold-500);
-  color: #0b0f19;
+.finance-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-family: var(--font-body);
 }
 
-.form-input-sm {
-  padding: 0.45rem 0.75rem;
-  font-size: 0.85rem;
+.gold-text {
+  color: #fbbf24;
 }
 
-/* KPI Grid */
-.kpi-grid {
+.emerald-text {
+  color: #34d399;
+}
+
+.finance-breakdown-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.stat-card {
-  padding: 1.5rem;
+.breakdown-col {
   display: flex;
-  gap: 1.25rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
-.border-gold { border-left: 4px solid var(--gold-500); }
-.border-emerald { border-left: 4px solid var(--emerald-500); }
-.border-blue { border-left: 4px solid var(--blue-500); }
-.border-rose { border-left: 4px solid var(--rose-500); }
+.breakdown-label {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-weight: 600;
+}
 
-.stat-icon-wrap {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
+.breakdown-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+/* CHARTS ROW */
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.chart-box {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chart-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.chart-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.chart-sub {
+  font-size: 0.725rem;
+  color: var(--text-tertiary);
+}
+
+.no-data-chart {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+
+.chart-layout {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.svg-wrap {
+  position: relative;
+  width: 130px;
+  height: 130px;
   flex-shrink: 0;
 }
 
-.gold-glow { background: var(--gold-glow); }
-.emerald-glow { background: var(--emerald-glow); }
-.blue-glow { background: var(--blue-glow); }
-.rose-glow { background: var(--rose-glow); }
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
 
-.stat-label {
-  font-size: 0.8rem;
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.center-count {
+  font-size: 1.2rem;
   font-weight: 700;
+  line-height: 1;
+}
+
+.center-sub {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
   text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
 }
 
-.stat-value {
-  font-size: 1.65rem;
-  font-weight: 800;
-  margin: 0.2rem 0;
-}
-
-.gold-text { color: #fbbf24; }
-.emerald-text { color: #34d399; }
-.blue-text { color: #60a5fa; }
-.rose-text { color: #fb7185; }
-
-.stat-sub {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
-/* Payment Methods Breakdown */
-.payment-methods-card {
-  padding: 1.5rem;
-}
-
-.card-title {
-  font-size: 1.15rem;
-  margin-bottom: 1rem;
-}
-
-.card-desc {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin-top: 0.2rem;
-}
-
-.methods-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-}
-
-.method-box {
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  padding: 1rem;
-  border-radius: var(--radius-md);
+.chart-legend {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 140px;
 }
 
-.method-tag {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.tag-pix { color: #34d399; }
-.tag-card { color: #60a5fa; }
-.tag-debit { color: #a78bfa; }
-.tag-cash { color: #fbbf24; }
-
-.method-val {
-  font-size: 1.25rem;
-  font-weight: 700;
-  font-family: var(--font-display);
-}
-
-/* Team Performance */
-.team-perf-card {
-  padding: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.card-header-flex {
+.legend-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
-.table-responsive {
+.legend-color {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.legend-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.legend-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.legend-val {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* LIST PANEL */
+.list-panel {
+  padding: 1rem 1.25rem;
+}
+
+.panel-header-simple {
+  margin-bottom: 0.75rem;
+}
+
+.panel-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.empty-list-row {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+
+.table-wrap {
   overflow-x: auto;
 }
 
-.custom-table {
+.compact-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  font-size: 0.825rem;
 }
 
-.custom-table th {
-  padding: 0.85rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 700;
+.compact-table th {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
   text-transform: uppercase;
-  color: var(--text-dim);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.custom-table td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 0.925rem;
-}
-
-.barber-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.avatar-sm {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-full);
-  object-fit: cover;
-  border: 2px solid var(--gold-500);
-}
-
-.barber-name {
-  display: block;
   font-weight: 600;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.barber-nick {
-  font-size: 0.8rem;
-  color: var(--text-dim);
+.compact-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.count-badge {
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-full);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-/* Monthly Grid */
-.monthly-card {
-  padding: 1.5rem;
-}
-
-.monthly-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-top: 1.25rem;
-}
-
-.month-box {
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  padding: 1.25rem;
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.month-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.month-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-.month-count {
+.text-mono {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-dim);
+  color: var(--text-secondary);
 }
 
-.month-value {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #fbbf24;
-  font-family: var(--font-display);
+.text-right {
+  text-align: right;
 }
 
-.month-breakdown {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.785rem;
-  color: var(--text-muted);
-  gap: 0.2rem;
-  border-top: 1px solid var(--border-color);
-  padding-top: 0.5rem;
-  margin-top: 0.25rem;
+.bold {
+  font-weight: 600;
+}
+
+.method-tag {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.675rem;
+  font-weight: 600;
 }
 </style>

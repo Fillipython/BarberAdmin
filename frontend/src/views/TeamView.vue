@@ -3,66 +3,56 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Equipe de Barbeiros</h1>
-        <p class="page-subtitle">Gestão de profissionais, regras de comissão e controle de acesso.</p>
+        <p class="page-subtitle">Profissionais cadastrados e percentuais de comissão.</p>
       </div>
 
       <button v-if="isMaster" class="btn btn-primary" @click="showModal = true">
-        <span>💈</span> Adicionar Barbeiro
+        + Adicionar Barbeiro
       </button>
     </div>
 
-    <!-- Permission Warning if not master -->
-    <div v-if="!isMaster" class="glass-card access-denied-card">
-      <span class="warning-icon">🔒</span>
-      <div>
-        <h3>Acesso Restrito ao Barbeiro Master</h3>
-        <p>Apenas o administrador master pode cadastrar, alterar comissões ou remover membros da barbearia.</p>
-      </div>
+    <!-- Restrict Warning -->
+    <div v-if="!isMaster" class="clean-panel access-denied-panel">
+      <h3>Acesso Restrito ao Barbeiro Master</h3>
+      <p>Apenas o administrador master pode cadastrar, alterar comissões ou remover membros da barbearia.</p>
     </div>
 
-    <!-- Barbers List (Visible to Master) -->
+    <!-- Barbers List -->
     <div v-else class="team-grid">
       <div 
         v-for="barber in state.users" 
         :key="barber.id" 
-        class="glass-card barber-card glass-card-hover"
+        class="clean-panel barber-card"
         :class="{ 'master-card': barber.role === 'MASTER' }"
       >
-        <div class="card-role-badge">
+        <div class="barber-head">
+          <div class="barber-info">
+            <h3 class="barber-name">{{ barber.name }}</h3>
+            <span class="barber-nick">{{ barber.nickname }}</span>
+          </div>
           <span class="badge" :class="barber.role === 'MASTER' ? 'badge-gold' : 'badge-blue'">
-            {{ barber.role === 'MASTER' ? '👑 Barbeiro Master' : '✂️ Barbeiro Equipe' }}
+            {{ barber.role === 'MASTER' ? 'Master' : 'Staff' }}
           </span>
         </div>
 
-        <div class="barber-profile">
-          <img :src="barber.avatar_url" class="barber-avatar" />
-          <h3 class="barber-name">{{ barber.name }}</h3>
-          <span class="barber-nick">{{ barber.nickname }}</span>
-        </div>
-
-        <div class="barber-info-list">
-          <div class="info-item">
-            <span class="info-label">WhatsApp:</span>
-            <span class="info-val">{{ barber.phone }}</span>
+        <div class="barber-details">
+          <div class="detail-row">
+            <span>WhatsApp:</span>
+            <span class="detail-val">{{ barber.phone }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-label">Email:</span>
-            <span class="info-val">{{ barber.email }}</span>
+          <div class="detail-row">
+            <span>Email:</span>
+            <span class="detail-val">{{ barber.email }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-label">Comissão Atual:</span>
-            <span class="info-val gold-text bold">{{ barber.commission_percentage }}%</span>
+          <div class="detail-row">
+            <span>Comissão:</span>
+            <span class="detail-val gold-text bold">{{ barber.commission_percentage }}%</span>
           </div>
         </div>
 
-        <div v-if="barber.bio" class="barber-bio">
-          <p>{{ barber.bio }}</p>
-        </div>
-
-        <!-- Master Actions -->
         <div v-if="isMaster && barber.role !== 'MASTER'" class="card-footer">
           <button class="btn btn-danger btn-sm full-width" @click="handleRemoveBarber(barber)">
-            🗑️ Remover da Barbearia
+            Remover Barbeiro
           </button>
         </div>
       </div>
@@ -72,7 +62,7 @@
     <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title">Novo Membro da Equipe</h2>
+          <h2 class="modal-title">Novo Barbeiro</h2>
           <button class="btn-icon btn-secondary" @click="showModal = false">✕</button>
         </div>
 
@@ -83,14 +73,14 @@
               <input v-model="form.name" required placeholder="Ex: Roberto Alves" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">Apelido Profissional *</label>
+              <label class="form-label">Apelido *</label>
               <input v-model="form.nickname" required placeholder="Ex: Beto Navalha" class="form-input" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">WhatsApp / Telefone *</label>
+              <label class="form-label">WhatsApp *</label>
               <input v-model="form.phone" required placeholder="Ex: 11977772222" class="form-input" />
             </div>
             <div class="form-group">
@@ -172,7 +162,7 @@ function handleRemoveBarber(barber) {
 .team-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .page-header {
@@ -180,115 +170,84 @@ function handleRemoveBarber(barber) {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .page-title {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .page-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
-.access-denied-card {
-  padding: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  border-left: 4px solid var(--rose-500);
-}
-
-.warning-icon {
-  font-size: 2rem;
+.access-denied-panel {
+  padding: 1.5rem;
+  border-left: 3px solid var(--accent-rose);
 }
 
 .team-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
 }
 
 .barber-card {
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  position: relative;
+  gap: 0.75rem;
 }
 
 .master-card {
-  border-color: rgba(245, 158, 11, 0.4);
+  border-left: 2px solid var(--accent-gold);
 }
 
-.card-role-badge {
+.barber-head {
   display: flex;
-  justify-content: flex-end;
-}
-
-.barber-profile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.barber-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--radius-full);
-  object-fit: cover;
-  border: 3px solid var(--gold-500);
-  margin-bottom: 0.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .barber-name {
-  font-size: 1.2rem;
-  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .barber-nick {
-  font-size: 0.85rem;
-  color: #fbbf24;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
-.barber-info-list {
-  background: var(--bg-dark);
-  padding: 0.85rem;
-  border-radius: var(--radius-sm);
+.barber-details {
+  background: #090c13;
+  border: 1px solid var(--border-subtle);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-xs);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
-.info-item {
+.detail-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.825rem;
+  font-size: 0.785rem;
+  color: var(--text-secondary);
 }
 
-.info-label {
-  color: var(--text-dim);
-}
-
-.info-val {
-  color: var(--text-muted);
+.detail-val {
+  color: var(--text-primary);
 }
 
 .bold {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .gold-text {
   color: #fbbf24;
-}
-
-.barber-bio {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  font-style: italic;
-  text-align: center;
 }
 
 .card-footer {
@@ -299,38 +258,38 @@ function handleRemoveBarber(barber) {
   width: 100%;
 }
 
-/* Modal */
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
 }
 </style>
