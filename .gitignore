@@ -1,0 +1,33 @@
+# Environment variables
+.env
+.env.local
+*.env
+
+# Docker data volumes
+pgdata/
+data/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Node / Dependencies (future frontend/backend/mobile)
+node_modules/
+dist/
+build/
+coverage/
+.expo/
+.next/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
