@@ -21,10 +21,11 @@
           </button>
         </div>
 
-        <!-- Date selector (if Day) -->
-        <div v-if="viewPeriod === 'day'" class="picker-wrap">
-          <label class="picker-label">Data:</label>
-          <input type="date" v-model="selectedDate" class="input-flat" />
+        <!-- Date stepper (if Day) -->
+        <div v-if="viewPeriod === 'day'" class="date-stepper-wrap">
+          <button class="step-btn" @click="changeDay(-1)">‹</button>
+          <span class="step-label">{{ formattedDateDisplay }}</span>
+          <button class="step-btn" @click="changeDay(1)">›</button>
         </div>
 
         <!-- Month selector (if Month) -->
@@ -240,8 +241,24 @@ import { ref, computed } from 'vue';
 import { state, isMaster, formatCurrency } from '../store/state.js';
 
 const viewPeriod = ref('day'); // 'day' | 'month'
-const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const currentDateObj = ref(new Date());
 const selectedMonth = ref(10); // Outubro
+
+const selectedDate = computed(() => {
+  return currentDateObj.value.toISOString().split('T')[0];
+});
+
+const formattedDateDisplay = computed(() => {
+  const options = { weekday: 'short', day: '2-digit', month: 'short' };
+  const str = currentDateObj.value.toLocaleDateString('pt-BR', options);
+  return str.charAt(0).toUpperCase() + str.slice(1);
+});
+
+function changeDay(delta) {
+  const d = new Date(currentDateObj.value);
+  d.setDate(d.getDate() + delta);
+  currentDateObj.value = d;
+}
 
 const monthsList = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -250,11 +267,7 @@ const monthsList = [
 
 const periodLabel = computed(() => {
   if (viewPeriod.value === 'day') {
-    const parts = selectedDate.value.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return selectedDate.value;
+    return formattedDateDisplay.value;
   }
   return `${monthsList[selectedMonth.value - 1]} de 2026`;
 });
@@ -466,6 +479,39 @@ const secondaryDonutSlices = computed(() => {
 .seg-btn.active {
   background: var(--bg-subtle);
   color: var(--text-primary);
+}
+
+.date-stepper-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #080a0f;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 0.15rem 0.35rem;
+}
+
+.step-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 0.4rem;
+  line-height: 1;
+}
+
+.step-btn:hover {
+  color: var(--accent-gold);
+}
+
+.step-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 90px;
+  text-align: center;
 }
 
 .picker-wrap {
