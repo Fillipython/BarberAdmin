@@ -76,14 +76,17 @@
           <div class="actions-block">
             <div class="price-wrapper">
               <span class="price-num">{{ formatCurrency(app.price_cents) }}</span>
-              <!-- Master direct price edit button -->
+              <!-- Master direct edit button (Service & Price) -->
               <button 
                 v-if="isMaster" 
                 class="edit-price-btn" 
                 @click="openEditPriceModal(app)" 
-                title="Barbeiro Master: Alterar Valor"
+                title="Barbeiro Master: Alterar Serviço ou Valor"
               >
-                ✎
+                <svg class="pencil-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                  <path d="m15 5 4 4"/>
+                </svg>
               </button>
             </div>
 
@@ -103,34 +106,45 @@
       </div>
     </div>
 
-    <!-- MODAL: ALTERAR VALOR (BARBEIRO MASTER) -->
+    <!-- MODAL: EDITAR SERVIÇO E VALOR (BARBEIRO MASTER) -->
     <div v-if="editingPriceApp" class="modal-backdrop" @click.self="editingPriceApp = null">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title">Alterar Valor do Corte</h2>
+          <h2 class="modal-title">Editar Atendimento</h2>
           <button class="btn-icon btn-secondary" @click="editingPriceApp = null">✕</button>
         </div>
 
         <form @submit.prevent="savePriceEdit" class="modal-body">
           <p class="edit-summary">
-            {{ editingPriceApp.client_name }} — {{ editingPriceApp.service_name }}
+            Cliente: <strong>{{ editingPriceApp.client_name }}</strong>
           </p>
 
           <div class="form-group">
-            <label class="form-label">Valor (R$)</label>
+            <label class="form-label">Tipo de Serviço</label>
+            <select v-model="editSelectedServiceId" @change="onEditServiceChange" class="form-select">
+              <option v-for="s in state.services.filter(s => s.is_active)" :key="s.id" :value="s.id">
+                {{ s.name }} — {{ formatCurrency(s.price_cents) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group highlight-box">
+            <label class="form-label">Valor Cobrado (R$) — Ajustável</label>
             <input 
               type="number" 
               step="0.50" 
               v-model.number="quickEditPriceDisplay" 
               required 
               class="form-input price-lg" 
-              autofocus 
             />
+            <span class="hint-text">
+              Ao selecionar outro serviço, o valor atualiza para o preço daquele serviço, mas você pode mudar para o valor que quiser.
+            </span>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="editingPriceApp = null">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar Novo Preço</button>
+            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
           </div>
         </form>
       </div>
@@ -278,7 +292,8 @@ import {
   formatCurrency, 
   addAppointment, 
   updateAppointmentStatus,
-  updateAppointmentPrice 
+  updateAppointmentPrice,
+  updateAppointmentService 
 } from '../store/state.js';
 
 const showModal = ref(false);
@@ -287,6 +302,7 @@ const completePaymentMethod = ref('PIX');
 const completeFinalPriceDisplay = ref(0);
 
 const editingPriceApp = ref(null);
+const editSelectedServiceId = ref('');
 const quickEditPriceDisplay = ref(0);
 
 const selectedBarberFilter = ref('ALL');
@@ -394,12 +410,29 @@ function handleSaveAppointment() {
 
 function openEditPriceModal(app) {
   editingPriceApp.value = app;
+  editSelectedServiceId.value = app.service_id || state.services[0]?.id || '';
   quickEditPriceDisplay.value = (app.price_cents || 0) / 100;
+}
+
+function onEditServiceChange() {
+  const service = state.services.find(s => s.id === editSelectedServiceId.value);
+  if (service) {
+    quickEditPriceDisplay.value = service.price_cents / 100;
+  }
 }
 
 function savePriceEdit() {
   if (editingPriceApp.value) {
-    updateAppointmentPrice(editingPriceApp.value.id, Math.round(quickEditPriceDisplay.value * 100));
+    const service = state.services.find(s => s.id === editSelectedServiceId.value);
+    const serviceName = service ? service.name : editingPriceApp.value.service_name;
+    const priceCents = Math.round(quickEditPriceDisplay.value * 100);
+
+    updateAppointmentService(
+      editingPriceApp.value.id,
+      editSelectedServiceId.value,
+      serviceName,
+      priceCents
+    );
     editingPriceApp.value = null;
   }
 }
@@ -666,9 +699,23 @@ function getStatusClass(status) {
   border: none;
   color: var(--accent-gold);
   cursor: pointer;
-  font-size: 0.85rem;
-  padding: 0 0.15rem;
+  padding: 2px 4px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pencil-icon {
+  width: 14px;
+  height: 14px;
+  stroke: var(--accent-gold);
+  transition: transform 0.15s ease, stroke 0.15s ease;
+}
+
+.edit-price-btn:hover .pencil-icon {
+  stroke: #fbbf24;
+  transform: scale(1.15);
 }
 
 .item-actions {
