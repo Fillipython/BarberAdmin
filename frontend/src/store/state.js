@@ -254,6 +254,24 @@ export function updateAppointmentStatus(id, newStatus, paymentMethod = 'PIX') {
   }
 }
 
+export function updateAppointmentPrice(id, newPriceCents) {
+  const app = state.appointments.find(a => a.id === id);
+  if (app) {
+    app.price_cents = newPriceCents;
+    saveState();
+  }
+}
+
+export function updateAppointmentService(id, serviceId, serviceName, priceCents) {
+  const app = state.appointments.find(a => a.id === id);
+  if (app) {
+    app.service_id = serviceId;
+    app.service_name = serviceName;
+    app.price_cents = priceCents;
+    saveState();
+  }
+}
+
 // Formatters
 export function formatCurrency(cents) {
   return new Intl.NumberFormat('pt-BR', {

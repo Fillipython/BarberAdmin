@@ -1,111 +1,142 @@
 <template>
-  <div class="appointments-page">
-    <!-- Top Bar: Action & Status -->
-    <div class="header-action-row">
-      <h1 class="page-title">Agenda</h1>
+  <div class="agenda-view">
+    <!-- Clean, Open Header with Date Navigation Inline -->
+    <div class="agenda-header">
+      <div class="header-left">
+        <h1 class="page-title">Agenda</h1>
+        <!-- Sleek Inline Date Stepper without boxes -->
+        <div class="inline-date-nav">
+          <button class="nav-arrow" @click="changeDay(-1)" title="Dia anterior">‹</button>
+          <span class="nav-date-text">{{ formattedDateDisplay }}</span>
+          <button class="nav-arrow" @click="changeDay(1)" title="Próximo dia">›</button>
+          <button v-if="!isToday" class="today-link" @click="goToToday">Hoje</button>
+        </div>
+      </div>
+
       <button class="btn btn-primary btn-sm" @click="openNewModal">
         + Agendar
       </button>
     </div>
 
-    <!-- MINIMALIST DATE NAVIGATOR (NO UGLY OS WHITE POPUP) -->
-    <div class="clean-panel date-navigator">
-      <button class="date-arrow-btn" @click="changeDay(-1)" title="Dia anterior">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </button>
-
-      <div class="date-display">
-        <span class="date-main">{{ formattedDateDisplay }}</span>
-        <span v-if="isToday" class="today-tag">Hoje</span>
+    <!-- Understated Text Tabs for Status & Barber Filter -->
+    <div class="agenda-subbar">
+      <div class="status-tabs">
+        <button 
+          v-for="st in statusOptions" 
+          :key="st.value" 
+          class="tab-link" 
+          :class="{ active: filterStatus === st.value }"
+          @click="filterStatus = st.value"
+        >
+          {{ st.label }}
+        </button>
       </div>
 
-      <button class="date-arrow-btn" @click="changeDay(1)" title="Próximo dia">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </button>
-
-      <button v-if="!isToday" class="btn btn-secondary btn-xs go-today-btn" @click="goToToday">
-        Ir para Hoje
-      </button>
-    </div>
-
-    <!-- COMPACT FILTER STRIP -->
-    <div class="clean-panel filters-strip">
-      <div v-if="isMaster" class="mini-filter">
-        <select v-model="selectedBarberFilter" class="strip-select">
+      <!-- Barber Filter for Master -->
+      <div v-if="isMaster" class="barber-filter-inline">
+        <select v-model="selectedBarberFilter" class="minimal-filter-select">
           <option value="ALL">Todos os Barbeiros</option>
           <option v-for="b in state.users" :key="b.id" :value="b.id">
             {{ b.nickname || b.name }}
           </option>
         </select>
       </div>
-
-      <div class="mini-filter">
-        <select v-model="filterStatus" class="strip-select">
-          <option value="ALL">Todos os Status</option>
-          <option value="CONFIRMED">Agendados</option>
-          <option value="COMPLETED">Concluídos</option>
-          <option value="CANCELLED">Cancelados</option>
-        </select>
-      </div>
-
-      <div class="counter-label">
-        {{ filteredAppointments.length }} {{ filteredAppointments.length === 1 ? 'atendimento' : 'atendimentos' }}
-      </div>
     </div>
 
-    <!-- APPOINTMENTS LIST -->
-    <div class="appointments-list">
-      <div v-if="filteredAppointments.length === 0" class="clean-panel empty-block">
-        <p class="empty-msg">Nenhum atendimento neste dia.</p>
-        <button class="btn btn-secondary btn-sm" @click="openNewModal">Criar Agendamento</button>
+    <!-- Timeline List of Appointments (Content-first, Hairline dividers, Zero Chunky Boxes) -->
+    <div class="timeline-container">
+      <div v-if="filteredAppointments.length === 0" class="empty-timeline">
+        <span>Nenhum atendimento agendado para este dia.</span>
       </div>
 
-      <div v-else class="cards-stack">
+      <div v-else class="timeline-list">
         <div 
           v-for="app in filteredAppointments" 
           :key="app.id" 
-          class="clean-panel app-row"
-          :class="{ 'app-completed': app.status === 'COMPLETED' }"
+          class="timeline-item"
+          :class="{ 'item-done': app.status === 'COMPLETED' }"
         >
-          <div class="time-col">
-            <span class="app-time">{{ app.scheduled_time || '09:00' }}</span>
-            <span class="status-indicator" :class="getStatusBadgeClass(app.status)">
-              {{ formatStatus(app.status) }}
-            </span>
+          <!-- Time Column -->
+          <div class="time-block">
+            <span class="time-digit">{{ app.scheduled_time || '09:00' }}</span>
+            <span class="status-dot" :class="getStatusClass(app.status)"></span>
           </div>
 
-          <div class="info-col">
-            <div class="client-title">{{ app.client_name }}</div>
-            <div class="service-details">
-              <span>{{ app.service_name }}</span>
-              <span v-if="isMaster" class="barber-assigned">({{ app.barber_name }})</span>
-            </div>
-            <div v-if="app.payment_method" class="payment-method-tag">
-              Pago via {{ app.payment_method }}
+          <!-- Main Info Column -->
+          <div class="info-block">
+            <div class="client-name">{{ app.client_name }}</div>
+            <div class="service-meta">
+              <span class="service-name">{{ app.service_name }}</span>
+              <span v-if="isMaster" class="barber-name">· {{ app.barber_name }}</span>
+              <span v-if="app.payment_method" class="payment-note">· {{ app.payment_method }}</span>
             </div>
           </div>
 
-          <div class="action-col">
-            <div class="price-tag">{{ formatCurrency(app.price_cents) }}</div>
+          <!-- Price & Actions Column (Master can edit price anytime) -->
+          <div class="actions-block">
+            <div class="price-wrapper">
+              <span class="price-num">{{ formatCurrency(app.price_cents) }}</span>
+              <!-- Master direct price edit button -->
+              <button 
+                v-if="isMaster" 
+                class="edit-price-btn" 
+                @click="openEditPriceModal(app)" 
+                title="Barbeiro Master: Alterar Valor"
+              >
+                ✎
+              </button>
+            </div>
 
-            <div v-if="app.status === 'CONFIRMED'" class="buttons-pair">
+            <div v-if="app.status === 'CONFIRMED'" class="item-actions">
               <button class="btn btn-primary btn-xs" @click="openCompleteModal(app)">
                 Receber
               </button>
-              <button class="btn btn-secondary btn-xs" @click="cancelAppointment(app.id)">
+              <button class="cancel-link" @click="cancelAppointment(app.id)" title="Cancelar">
                 ✕
               </button>
             </div>
+            <span v-else class="done-tag">
+              {{ app.status === 'COMPLETED' ? 'Concluído' : 'Cancelado' }}
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL NOVO AGENDAMENTO -->
+    <!-- MODAL: ALTERAR VALOR (BARBEIRO MASTER) -->
+    <div v-if="editingPriceApp" class="modal-backdrop" @click.self="editingPriceApp = null">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Alterar Valor do Corte</h2>
+          <button class="btn-icon btn-secondary" @click="editingPriceApp = null">✕</button>
+        </div>
+
+        <form @submit.prevent="savePriceEdit" class="modal-body">
+          <p class="edit-summary">
+            {{ editingPriceApp.client_name }} — {{ editingPriceApp.service_name }}
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Valor (R$)</label>
+            <input 
+              type="number" 
+              step="0.50" 
+              v-model.number="quickEditPriceDisplay" 
+              required 
+              class="form-input price-lg" 
+              autofocus 
+            />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="editingPriceApp = null">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Novo Preço</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: NOVO AGENDAMENTO -->
     <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">
       <div class="modal-content">
         <div class="modal-header">
@@ -145,7 +176,7 @@
           </div>
 
           <!-- Dynamic Service & Editable Price -->
-          <div class="form-group service-select-box">
+          <div class="form-group highlight-box">
             <label class="form-label">Serviço *</label>
             <select v-model="form.service_id" @change="onServiceSelect" required class="form-select">
               <option value="">Selecione o serviço...</option>
@@ -155,7 +186,7 @@
             </select>
 
             <div class="price-input-group">
-              <label class="form-label">Valor (R$) — ajustável:</label>
+              <label class="form-label">Valor Cobrado (R$) — ajustável:</label>
               <input 
                 type="number" 
                 step="0.50" 
@@ -163,6 +194,7 @@
                 required 
                 class="form-input price-bold-input" 
               />
+              <span class="hint-text">Valor ajustável livremente. Ao trocar o serviço, atualiza automaticamente.</span>
             </div>
           </div>
 
@@ -190,9 +222,20 @@
         </div>
 
         <div class="modal-body">
-          <div class="summary-receipt">
-            <span>{{ completingApp.client_name }} — {{ completingApp.service_name }}</span>
-            <div class="receipt-price">{{ formatCurrency(completingApp.price_cents) }}</div>
+          <p class="edit-summary">
+            {{ completingApp.client_name }} — {{ completingApp.service_name }}
+          </p>
+
+          <!-- Price can be modified before completing -->
+          <div class="form-group">
+            <label class="form-label">Valor Final (R$)</label>
+            <input 
+              type="number" 
+              step="0.50" 
+              v-model.number="completeFinalPriceDisplay" 
+              required 
+              class="form-input price-lg" 
+            />
           </div>
 
           <div class="form-group">
@@ -234,19 +277,30 @@ import {
   isMaster, 
   formatCurrency, 
   addAppointment, 
-  updateAppointmentStatus 
+  updateAppointmentStatus,
+  updateAppointmentPrice 
 } from '../store/state.js';
 
 const showModal = ref(false);
 const completingApp = ref(null);
 const completePaymentMethod = ref('PIX');
+const completeFinalPriceDisplay = ref(0);
+
+const editingPriceApp = ref(null);
+const quickEditPriceDisplay = ref(0);
 
 const selectedBarberFilter = ref('ALL');
 const filterStatus = ref('ALL');
 const selectedClientId = ref('');
 const formPriceDisplay = ref(35.00);
 
-// Minimalist Date Logic without OS datepicker
+const statusOptions = [
+  { label: 'Todos', value: 'ALL' },
+  { label: 'Agendados', value: 'CONFIRMED' },
+  { label: 'Concluídos', value: 'COMPLETED' },
+  { label: 'Cancelados', value: 'CANCELLED' }
+];
+
 const currentDateObj = ref(new Date());
 
 const filterDate = computed(() => {
@@ -261,7 +315,6 @@ const isToday = computed(() => {
 const formattedDateDisplay = computed(() => {
   const options = { weekday: 'short', day: '2-digit', month: 'short' };
   const str = currentDateObj.value.toLocaleDateString('pt-BR', options);
-  // capitalize first letter
   return str.charAt(0).toUpperCase() + str.slice(1);
 });
 
@@ -339,13 +392,28 @@ function handleSaveAppointment() {
   showModal.value = false;
 }
 
+function openEditPriceModal(app) {
+  editingPriceApp.value = app;
+  quickEditPriceDisplay.value = (app.price_cents || 0) / 100;
+}
+
+function savePriceEdit() {
+  if (editingPriceApp.value) {
+    updateAppointmentPrice(editingPriceApp.value.id, Math.round(quickEditPriceDisplay.value * 100));
+    editingPriceApp.value = null;
+  }
+}
+
 function openCompleteModal(app) {
   completingApp.value = app;
+  completeFinalPriceDisplay.value = (app.price_cents || 0) / 100;
   completePaymentMethod.value = 'PIX';
 }
 
 function confirmComplete() {
   if (completingApp.value) {
+    const newPriceCents = Math.round(completeFinalPriceDisplay.value * 100);
+    updateAppointmentPrice(completingApp.value.id, newPriceCents);
     updateAppointmentStatus(completingApp.value.id, 'COMPLETED', completePaymentMethod.value);
     completingApp.value = null;
   }
@@ -357,179 +425,194 @@ function cancelAppointment(id) {
   }
 }
 
-function formatStatus(status) {
-  const map = {
-    CONFIRMED: 'Agendado',
-    COMPLETED: 'Feito',
-    CANCELLED: 'Cancelado'
-  };
-  return map[status] || status;
-}
-
-function getStatusBadgeClass(status) {
-  const map = {
-    CONFIRMED: 'status-blue',
-    COMPLETED: 'status-green',
-    CANCELLED: 'status-red'
-  };
-  return map[status] || 'status-gray';
+function getStatusClass(status) {
+  if (status === 'COMPLETED') return 'dot-green';
+  if (status === 'CANCELLED') return 'dot-red';
+  return 'dot-blue';
 }
 </script>
 
 <style scoped>
-.appointments-page {
+.agenda-view {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 1rem;
 }
 
-.header-action-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-/* SLEEK NATIVE DATE CONTROLLER */
-.date-navigator {
+/* Header - Open, clean, no box */
+.agenda-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.45rem 0.75rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.date-arrow-btn {
-  background: #080a0f;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-xs);
+.header-left {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.date-arrow-btn:hover {
-  border-color: var(--accent-gold);
-}
-
-.date-arrow-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.date-display {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.date-main {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.today-tag {
-  background: var(--accent-gold-dim);
-  color: #fbbf24;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--radius-xs);
-  text-transform: uppercase;
-}
-
-.btn-xs {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.7rem;
-}
-
-.go-today-btn {
-  margin-left: 0.5rem;
-}
-
-/* FILTERS STRIP */
-.filters-strip {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  align-items: baseline;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
-.strip-select {
-  background: #080a0f;
-  border: 1px solid var(--border-subtle);
+.page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.inline-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-arrow {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  line-height: 1;
+}
+
+.nav-arrow:hover {
   color: var(--text-primary);
+}
+
+.nav-date-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.today-link {
+  background: transparent;
+  border: none;
+  color: var(--accent-gold);
   font-size: 0.75rem;
-  padding: 0.3rem 0.5rem;
-  border-radius: var(--radius-xs);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Subbar with Text Links/Chips */
+.agenda-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: 0.65rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.status-tabs {
+  display: flex;
+  gap: 0.85rem;
+}
+
+.tab-link {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 0.825rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.tab-link:hover {
+  color: var(--text-secondary);
+}
+
+.tab-link.active {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.barber-filter-inline {
+  display: flex;
+  align-items: center;
+}
+
+.minimal-filter-select {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.785rem;
+  cursor: pointer;
   outline: none;
 }
 
-.counter-label {
-  margin-left: auto;
-  font-size: 0.725rem;
-  color: var(--text-tertiary);
+.minimal-filter-select option {
+  background: #111520;
 }
 
-/* LIST OF APPOINTMENTS */
-.cards-stack {
+/* TIMELINE LIST - HAIRLINE DIVIDERS, ZERO CHUNKY BOXES */
+.timeline-container {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
 }
 
-.app-row {
+.empty-timeline {
+  padding: 3rem 0;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-item {
   display: flex;
   align-items: center;
-  padding: 0.75rem 0.85rem;
-  gap: 0.75rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid #38bdf8;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border-hairline);
+  transition: background-color 0.15s ease;
 }
 
-.app-completed {
-  border-left-color: #10b981;
+.timeline-item:hover {
+  background: rgba(255, 255, 255, 0.015);
 }
 
-.time-col {
+.item-done {
+  opacity: 0.65;
+}
+
+.time-block {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 52px;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 60px;
 }
 
-.app-time {
+.time-digit {
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
   font-family: var(--font-mono);
   color: #fbbf24;
 }
 
-.status-indicator {
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
-.status-blue { color: #38bdf8; }
-.status-green { color: #34d399; }
-.status-red { color: #fb7185; }
-.status-gray { color: var(--text-tertiary); }
+.dot-blue { background: #38bdf8; }
+.dot-green { background: #10b981; }
+.dot-red { background: #f43f5e; }
 
-.info-col {
+.info-block {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -537,8 +620,8 @@ function getStatusBadgeClass(status) {
   min-width: 0;
 }
 
-.client-title {
-  font-size: 0.875rem;
+.client-name {
+  font-size: 0.925rem;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -546,86 +629,115 @@ function getStatusBadgeClass(status) {
   text-overflow: ellipsis;
 }
 
-.service-details {
-  font-size: 0.75rem;
+.service-meta {
+  font-size: 0.785rem;
   color: var(--text-secondary);
 }
 
-.barber-assigned {
+.barber-name {
   color: var(--text-tertiary);
-  margin-left: 0.25rem;
 }
 
-.payment-method-tag {
-  font-size: 0.65rem;
-  color: #34d399;
-  font-weight: 500;
+.payment-note {
+  color: #10b981;
 }
 
-.action-col {
+.actions-block {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.price-tag {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #f1f5f9;
-}
-
-.buttons-pair {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.empty-block {
-  padding: 2rem 1rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
-.empty-msg {
-  font-size: 0.8rem;
+.price-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.price-num {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.edit-price-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent-gold);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 0.15rem;
+  line-height: 1;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cancel-link {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0 0.3rem;
+  font-size: 0.85rem;
+}
+
+.cancel-link:hover {
+  color: #f43f5e;
+}
+
+.done-tag {
+  font-size: 0.725rem;
   color: var(--text-tertiary);
 }
 
-/* MODAL */
+/* Modals */
 .modal-header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-hairline);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-title {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .modal-body {
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
+}
+
+.edit-summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.price-lg {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #fbbf24;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
-.service-select-box {
-  background: #090c13;
-  border: 1px solid var(--border-subtle);
-  padding: 0.65rem;
-  border-radius: var(--radius-xs);
+.highlight-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-hairline);
+  padding: 0.75rem;
+  border-radius: 6px;
 }
 
 .price-input-group {
@@ -633,56 +745,48 @@ function getStatusBadgeClass(status) {
 }
 
 .price-bold-input {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #fbbf24;
+}
+
+.hint-text {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  display: block;
+  margin-top: 0.25rem;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.4rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.summary-receipt {
-  background: #090c13;
-  padding: 0.75rem;
-  border-radius: var(--radius-xs);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.receipt-price {
-  font-size: 1.1rem;
-  color: #fbbf24;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-hairline);
 }
 
 .payment-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
 }
 
 .pay-chip {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: #090c13;
-  border: 1px solid var(--border-subtle);
-  padding: 0.5rem 0.6rem;
-  border-radius: var(--radius-xs);
+  background: #151a26;
+  border: 1px solid var(--border-hairline);
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.785rem;
+  font-size: 0.8rem;
 }
 
 .pay-chip.active {
   border-color: var(--accent-gold);
-  background: var(--accent-gold-dim);
+  background: rgba(217, 151, 38, 0.15);
 }
 </style>
