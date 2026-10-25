@@ -42,6 +42,25 @@ services:
     networks:
       - barber_admin_network
 
+  # ==========================================
+  # Frontend - Vue 3 + Vite
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: barber_admin_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - barber_admin_network
+
 volumes:
   postgres_data:
     driver: local
