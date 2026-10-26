@@ -26,6 +26,13 @@ coverage/
 .expo/
 .next/
 
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+
 # Logs
 *.log
 npm-debug.log*
