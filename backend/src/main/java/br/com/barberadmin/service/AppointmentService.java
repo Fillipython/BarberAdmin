@@ -9,6 +9,7 @@ import br.com.barberadmin.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -51,7 +52,7 @@ public class AppointmentService {
         return list.stream().map(this::toResponseDTO).collect(Collectors.toList());
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public AppointmentResponseDTO createAppointment(AppointmentRequestDTO dto) {
         Client client = clientRepository.findById(dto.getClientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
@@ -109,7 +110,7 @@ public class AppointmentService {
     /**
      * Permite ao Barbeiro Master ou ao barbeiro responsável alterar o valor de um corte diretamente
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public AppointmentResponseDTO overridePrice(UUID appointmentId, PriceOverrideDTO dto) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
@@ -134,7 +135,7 @@ public class AppointmentService {
     /**
      * Permite alterar o tipo de serviço associado ao agendamento
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public AppointmentResponseDTO changeService(UUID appointmentId, ServiceChangeDTO dto) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
@@ -167,7 +168,7 @@ public class AppointmentService {
         return toResponseDTO(saved);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public AppointmentResponseDTO updateStatus(UUID appointmentId, AppointmentStatus status) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
@@ -180,9 +181,9 @@ public class AppointmentService {
     }
 
     /**
-     * Finaliza o atendimento, processa a comissão do barbeiro e registra no caixa da barbearia
+     * Finaliza o atendimento, processa a comissão do barbeiro e registra no caixa da barbearia de forma 100% atômica
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public AppointmentResponseDTO checkout(UUID appointmentId, CheckoutPaymentDTO dto) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));

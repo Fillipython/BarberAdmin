@@ -1,4 +1,16 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+function resolveApiBase() {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    if (host.includes('fillipython.ddns.net')) {
+      return `${protocol}//fillipython.ddns.net:8080`;
+    }
+  }
+  return 'http://localhost:8080';
+}
+
+const API_BASE = resolveApiBase();
 const V1 = `${API_BASE}/api/v1`;
 
 async function request(endpoint, options = {}) {

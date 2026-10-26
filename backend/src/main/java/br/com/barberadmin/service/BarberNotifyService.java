@@ -31,9 +31,9 @@ public class BarberNotifyService {
     private boolean autoConfirm;
 
     /**
-     * Processa evento de entrada enviado pelo BarberNotify (criação, reagendamento ou cancelamento de corte)
+     * Processa evento de entrada enviado pelo BarberNotify de forma estritamente atômica
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class, isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public BarberNotifyResponseDTO processIncomingEvent(BarberNotifyEventDTO event) {
         log.info("Recebido evento do BarberNotify: tipo={}, cliente={}, telefone={}, data={}",
                 event.getEventType(), event.getClientName(), event.getClientPhone(), event.getScheduledAt());

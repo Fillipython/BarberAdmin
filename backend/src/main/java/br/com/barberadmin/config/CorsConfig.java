@@ -18,12 +18,14 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        // Permite origens do Vite dev, Capacitor mobile app e localhost
+        // Permite origens do Vite dev, Capacitor mobile app, localhost e domínio DDNS
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "capacitor://localhost",
-                "ionic://localhost"
+                "ionic://localhost",
+                "http://fillipython.ddns.net*",
+                "https://fillipython.ddns.net*"
         ));
         config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-BarberNotify-Secret"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
