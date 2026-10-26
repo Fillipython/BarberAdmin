@@ -229,12 +229,12 @@ ORDER BY reference_year DESC, reference_month DESC;
 --      Hash bcrypt: $2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG
 -- =============================================================================
 
--- Barbeiros (1 Master e 2 Barbeiros de equipe)
+-- Barbeiros (1 Master e 4 Barbeiros de equipe)
 INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commission_percentage, bio) VALUES
 (
     '00000000-0000-0000-0000-000000000001',
-    'Carlos Silva',
-    'Mestre Carlos',
+    'Alexandre Duarte',
+    'Alexandre',
     'master@barberadmin.com',
     '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
     '11988880001',
@@ -245,7 +245,7 @@ INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commis
 (
     '00000000-0000-0000-0000-000000000002',
     'Lucas Santana',
-    'Lucas Navalha',
+    'Lucas',
     'lucas@barberadmin.com',
     '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
     '11988880002',
@@ -256,15 +256,37 @@ INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commis
 (
     '00000000-0000-0000-0000-000000000003',
     'Matheus Oliveira',
-    'Matheus Fade',
+    'Matheus',
     'matheus@barberadmin.com',
     '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
     '11988880003',
     'BARBER',
     50.00,
     'Especialista em platinados, luzes e cortes modernos.'
+),
+(
+    '00000000-0000-0000-0000-000000000004',
+    'Rodrigo Lima',
+    'Rodrigo',
+    'rodrigo.barber@barberadmin.com',
+    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
+    '11988880004',
+    'BARBER',
+    50.00,
+    'Especialista em corte clássico e design de sobrancelha.'
+),
+(
+    '00000000-0000-0000-0000-000000000005',
+    'Bruno Rocha',
+    'Bruno',
+    'bruno@barberadmin.com',
+    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
+    '11988880005',
+    'BARBER',
+    50.00,
+    'Especialista em visagismo e finalizações modernas.'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, nickname = EXCLUDED.nickname;
 
 -- Tabela de Serviços Completa
 INSERT INTO services (name, description, category, price_cents, duration_minutes, display_order) VALUES
@@ -286,103 +308,37 @@ INSERT INTO services (name, description, category, price_cents, duration_minutes
 ('Pigmentação de Barba/Cabelo', 'Camuflagem de falhas e realce de contorno', 'Acabamento', 2000, 30, 16)
 ON CONFLICT DO NOTHING;
 
--- Clientes Iniciais
+-- Clientes Iniciais (10 Clientes)
 INSERT INTO clients (id, name, phone, email, notes, total_visits, total_spent_cents) VALUES
-(
-    '10000000-0000-0000-0000-000000000001',
-    'Rodrigo Albuquerque',
-    '11977771001',
-    'rodrigo@email.com',
-    'Gosta do degradê bem baixo, disfarçado na navalha.',
-    6,
-    30000
-),
-(
-    '10000000-0000-0000-0000-000000000002',
-    'Gabriel Santos',
-    '11977771002',
-    'gabriel@email.com',
-    'Prefere barba mais desenhada e toalha bem quente.',
-    3,
-    15000
-),
-(
-    '10000000-0000-0000-0000-000000000003',
-    'Felipe Almeida',
-    '11977771003',
-    'felipe@email.com',
-    'Cliente pontual, faz platinado semestralmente.',
-    4,
-    35000
-)
+('10000000-0000-0000-0000-000000000001', 'Gabriel Santos', '11977771001', 'gabriel@email.com', 'Gosta do degradê navalhado.', 8, 40000),
+('10000000-0000-0000-0000-000000000002', 'Rodrigo Albuquerque', '11977771002', 'rodrigo@email.com', 'Toalha quente na barba.', 6, 30000),
+('10000000-0000-0000-0000-000000000003', 'Rafael Moreira', '11977771003', 'rafael@email.com', 'Platinado e corte a cada 2 meses.', 5, 55000),
+('10000000-0000-0000-0000-000000000004', 'Bruno Mendes', '11977771004', 'bruno.m@email.com', 'Corte tradicional na tesoura.', 12, 36000),
+('10000000-0000-0000-0000-000000000005', 'Thiago Costa', '11977771005', 'thiago@email.com', 'Sobrancelha alinhada na navalha.', 4, 18000),
+('10000000-0000-0000-0000-000000000006', 'Vinicius Pereira', '11977771006', 'vinicius@email.com', 'Pigmentação de barba.', 7, 35000),
+('10000000-0000-0000-0000-000000000007', 'Eduardo Ramos', '11977771007', 'eduardo@email.com', 'Corte kids do filho também.', 9, 45000),
+('10000000-0000-0000-0000-000000000008', 'Gustavo Henrique', '11977771008', 'gustavo@email.com', 'Luzes e degrade.', 3, 30000),
+('10000000-0000-0000-0000-000000000009', 'Leonardo Souza', '11977771009', 'leonardo@email.com', 'Barboterapia completa.', 5, 25000),
+('10000000-0000-0000-0000-000000000010', 'Marcelo Antunes', '11977771010', 'marcelo@email.com', 'Cliente corporativo pontual.', 11, 55000)
 ON CONFLICT (phone) DO NOTHING;
 
--- Exemplos de Agendamentos e Financeiro (Hoje e dias recentes para teste de dashboard)
+-- Agendamentos de Exemplo
 INSERT INTO appointments (id, client_id, barber_id, scheduled_at, end_at, status, total_price_cents, final_price_cents, notes, completed_at) VALUES
-(
-    '20000000-0000-0000-0000-000000000001',
-    '10000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000001',
-    CURRENT_DATE + TIME '09:00:00',
-    CURRENT_DATE + TIME '10:00:00',
-    'COMPLETED',
-    5000,
-    5000,
-    'Corte & Barba finalizado com sucesso.',
-    CURRENT_DATE + TIME '10:00:00'
-),
-(
-    '20000000-0000-0000-0000-000000000002',
-    '10000000-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000002',
-    CURRENT_DATE + TIME '10:30:00',
-    CURRENT_DATE + TIME '11:00:00',
-    'COMPLETED',
-    3000,
-    3000,
-    'Corte tradicional.',
-    CURRENT_DATE + TIME '11:00:00'
-),
-(
-    '20000000-0000-0000-0000-000000000003',
-    '10000000-0000-0000-0000-000000000003',
-    '00000000-0000-0000-0000-000000000003',
-    CURRENT_DATE + TIME '14:00:00',
-    CURRENT_DATE + TIME '15:00:00',
-    'CONFIRMED',
-    13000,
-    13000,
-    'Platinado & Corte agendado para a tarde.',
-    NULL
-)
+('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', CURRENT_DATE + TIME '09:00:00', CURRENT_DATE + TIME '10:00:00', 'COMPLETED', 5000, 5000, 'Corte & Barba finalizado.', CURRENT_DATE + TIME '10:00:00'),
+('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', CURRENT_DATE + TIME '09:30:00', CURRENT_DATE + TIME '10:00:00', 'COMPLETED', 3000, 3000, 'Corte Tradicional.', CURRENT_DATE + TIME '10:00:00'),
+('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', CURRENT_DATE + TIME '10:00:00', CURRENT_DATE + TIME '11:00:00', 'COMPLETED', 13000, 13000, 'Platinado & Corte.', CURRENT_DATE + TIME '11:00:00'),
+('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', CURRENT_DATE + TIME '11:00:00', CURRENT_DATE + TIME '12:00:00', 'COMPLETED', 5500, 5500, 'Corte, Barba & Sobrancelha.', CURRENT_DATE + TIME '12:00:00'),
+('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', CURRENT_DATE + TIME '11:30:00', CURRENT_DATE + TIME '12:00:00', 'COMPLETED', 3500, 3500, 'Corte & Sobrancelha.', CURRENT_DATE + TIME '12:00:00'),
+('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000001', CURRENT_DATE + TIME '14:00:00', CURRENT_DATE + TIME '14:30:00', 'CONFIRMED', 2000, 2000, 'Pigmentação agendada.', NULL),
+('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', CURRENT_DATE + TIME '15:00:00', CURRENT_DATE + TIME '16:00:00', 'CONFIRMED', 5000, 5000, 'Corte & Barba agendado.', NULL),
+('20000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000003', CURRENT_DATE + TIME '16:00:00', CURRENT_DATE + TIME '17:00:00', 'CONFIRMED', 10000, 10000, 'Luzes & Corte agendado.', NULL)
 ON CONFLICT DO NOTHING;
 
--- Registro Financeiro correspondente às ordens concluídas
+-- Registros Financeiros das Ordens Concluídas
 INSERT INTO financial_records (appointment_id, barber_id, client_id, type, amount_cents, barber_commission_cents, shop_net_cents, payment_method, payment_status, paid_at, description) VALUES
-(
-    '20000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000001',
-    '10000000-0000-0000-0000-000000000001',
-    'RECEITA_SERVICO',
-    5000,
-    5000,
-    0,
-    'PIX',
-    'PAGO',
-    CURRENT_DATE + TIME '10:05:00',
-    'Atendimento Mestre Carlos - Corte & Barba (Rodrigo)'
-),
-(
-    '20000000-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000002',
-    '10000000-0000-0000-0000-000000000002',
-    'RECEITA_SERVICO',
-    3000,
-    1500,
-    1500,
-    'CARTAO_CREDITO',
-    'PAGO',
-    CURRENT_DATE + TIME '11:02:00',
-    'Atendimento Lucas Navalha - Corte (Gabriel)'
-)
+('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'RECEITA_SERVICO', 5000, 5000, 0, 'PIX', 'PAGO', CURRENT_DATE + TIME '10:05:00', 'Alexandre Duarte - Corte & Barba (Rodrigo)'),
+('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'RECEITA_SERVICO', 3000, 1500, 1500, 'CARTAO_CREDITO', 'PAGO', CURRENT_DATE + TIME '10:02:00', 'Lucas Santana - Corte (Gabriel)'),
+('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'RECEITA_SERVICO', 13000, 6500, 6500, 'PIX', 'PAGO', CURRENT_DATE + TIME '11:05:00', 'Matheus Oliveira - Platinado (Rafael)'),
+('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'RECEITA_SERVICO', 5500, 2750, 2750, 'DINHEIRO', 'PAGO', CURRENT_DATE + TIME '12:05:00', 'Rodrigo Lima - Corte & Barba (Bruno)'),
+('20000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'RECEITA_SERVICO', 3500, 1750, 1750, 'CARTAO_DEBITO', 'PAGO', CURRENT_DATE + TIME '12:02:00', 'Bruno Rocha - Corte & Sobrancelha (Thiago)')
 ON CONFLICT DO NOTHING;

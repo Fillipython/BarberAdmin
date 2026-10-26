@@ -1,12 +1,14 @@
 import { reactive, computed } from 'vue';
 
-const STORAGE_KEY = 'barber_admin_data_v1';
+const STORAGE_KEY = 'barber_admin_data_v4';
+
+const today = new Date().toISOString().split('T')[0];
 
 const INITIAL_DATA = {
   currentUser: {
     id: '00000000-0000-0000-0000-000000000001',
-    name: 'Carlos Silva',
-    nickname: 'Mestre Carlos',
+    name: 'Alexandre Duarte',
+    nickname: 'Alexandre',
     email: 'master@barberadmin.com',
     role: 'MASTER',
     commission_percentage: 100,
@@ -15,8 +17,8 @@ const INITIAL_DATA = {
   users: [
     {
       id: '00000000-0000-0000-0000-000000000001',
-      name: 'Carlos Silva',
-      nickname: 'Mestre Carlos',
+      name: 'Alexandre Duarte',
+      nickname: 'Alexandre',
       email: 'master@barberadmin.com',
       phone: '11988880001',
       role: 'MASTER',
@@ -27,7 +29,7 @@ const INITIAL_DATA = {
     {
       id: '00000000-0000-0000-0000-000000000002',
       name: 'Lucas Santana',
-      nickname: 'Lucas Navalha',
+      nickname: 'Lucas',
       email: 'lucas@barberadmin.com',
       phone: '11988880002',
       role: 'BARBER',
@@ -38,12 +40,34 @@ const INITIAL_DATA = {
     {
       id: '00000000-0000-0000-0000-000000000003',
       name: 'Matheus Oliveira',
-      nickname: 'Matheus Fade',
+      nickname: 'Matheus',
       email: 'matheus@barberadmin.com',
       phone: '11988880003',
       role: 'BARBER',
       commission_percentage: 50,
       avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
+      is_active: true
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000004',
+      name: 'Rodrigo Lima',
+      nickname: 'Rodrigo',
+      email: 'rodrigo.barber@barberadmin.com',
+      phone: '11988880004',
+      role: 'BARBER',
+      commission_percentage: 50,
+      avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=250',
+      is_active: true
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000005',
+      name: 'Bruno Rocha',
+      nickname: 'Bruno',
+      email: 'bruno@barberadmin.com',
+      phone: '11988880005',
+      role: 'BARBER',
+      commission_percentage: 50,
+      avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=250',
       is_active: true
     }
   ],
@@ -66,45 +90,28 @@ const INITIAL_DATA = {
     { id: '16', name: 'Pigmentação de Barba/Cabelo', category: 'Acabamento', price_cents: 2000, duration_minutes: 30, is_active: true }
   ],
   clients: [
-    {
-      id: 'c1',
-      name: 'Rodrigo Albuquerque',
-      phone: '11977771001',
-      email: 'rodrigo@email.com',
-      notes: 'Gosta do degradê bem baixo navalhado.',
-      total_visits: 6,
-      total_spent_cents: 30000
-    },
-    {
-      id: 'c2',
-      name: 'Gabriel Santos',
-      phone: '11977771002',
-      email: 'gabriel@email.com',
-      notes: 'Prefere toalha bem quente na barba.',
-      total_visits: 3,
-      total_spent_cents: 15000
-    },
-    {
-      id: 'c3',
-      name: 'Felipe Almeida',
-      phone: '11977771003',
-      email: 'felipe@email.com',
-      notes: 'Cliente de platinado pontual.',
-      total_visits: 4,
-      total_spent_cents: 35000
-    }
+    { id: 'c1', name: 'Gabriel Santos', phone: '11977771001', email: 'gabriel@email.com', notes: 'Gosta do degradê navalhado.', total_visits: 8, total_spent_cents: 40000 },
+    { id: 'c2', name: 'Rodrigo Albuquerque', phone: '11977771002', email: 'rodrigo@email.com', notes: 'Toalha quente na barba.', total_visits: 6, total_spent_cents: 30000 },
+    { id: 'c3', name: 'Rafael Moreira', phone: '11977771003', email: 'rafael@email.com', notes: 'Platinado e corte a cada 2 meses.', total_visits: 5, total_spent_cents: 55000 },
+    { id: 'c4', name: 'Bruno Mendes', phone: '11977771004', email: 'bruno.m@email.com', notes: 'Corte tradicional na tesoura.', total_visits: 12, total_spent_cents: 36000 },
+    { id: 'c5', name: 'Thiago Costa', phone: '11977771005', email: 'thiago@email.com', notes: 'Sobrancelha alinhada na navalha.', total_visits: 4, total_spent_cents: 18000 },
+    { id: 'c6', name: 'Vinicius Pereira', phone: '11977771006', email: 'vinicius@email.com', notes: 'Pigmentação de barba.', total_visits: 7, total_spent_cents: 35000 },
+    { id: 'c7', name: 'Eduardo Ramos', phone: '11977771007', email: 'eduardo@email.com', notes: 'Corte kids do filho também.', total_visits: 9, total_spent_cents: 45000 },
+    { id: 'c8', name: 'Gustavo Henrique', phone: '11977771008', email: 'gustavo@email.com', notes: 'Luzes e degrade.', total_visits: 3, total_spent_cents: 30000 },
+    { id: 'c9', name: 'Leonardo Souza', phone: '11977771009', email: 'leonardo@email.com', notes: 'Barboterapia completa.', total_visits: 5, total_spent_cents: 25000 },
+    { id: 'c10', name: 'Marcelo Antunes', phone: '11977771010', email: 'marcelo@email.com', notes: 'Cliente corporativo pontual.', total_visits: 11, total_spent_cents: 55000 }
   ],
   appointments: [
     {
       id: 'a1',
       client_name: 'Rodrigo Albuquerque',
-      client_phone: '11977771001',
+      client_phone: '11977771002',
       barber_id: '00000000-0000-0000-0000-000000000001',
-      barber_name: 'Carlos Silva',
+      barber_name: 'Alexandre Duarte',
       service_id: '4',
       service_name: 'Corte & Barba',
       price_cents: 5000,
-      scheduled_date: new Date().toISOString().split('T')[0],
+      scheduled_date: today,
       scheduled_time: '09:00',
       status: 'COMPLETED',
       payment_method: 'PIX'
@@ -112,28 +119,98 @@ const INITIAL_DATA = {
     {
       id: 'a2',
       client_name: 'Gabriel Santos',
-      client_phone: '11977771002',
+      client_phone: '11977771001',
       barber_id: '00000000-0000-0000-0000-000000000002',
       barber_name: 'Lucas Santana',
       service_id: '1',
       service_name: 'Corte Tradicional',
       price_cents: 3000,
-      scheduled_date: new Date().toISOString().split('T')[0],
-      scheduled_time: '10:30',
+      scheduled_date: today,
+      scheduled_time: '09:30',
       status: 'COMPLETED',
       payment_method: 'CARTAO_CREDITO'
     },
     {
       id: 'a3',
-      client_name: 'Felipe Almeida',
+      client_name: 'Rafael Moreira',
       client_phone: '11977771003',
       barber_id: '00000000-0000-0000-0000-000000000003',
       barber_name: 'Matheus Oliveira',
       service_id: '10',
       service_name: 'Platinado & Corte',
       price_cents: 13000,
-      scheduled_date: new Date().toISOString().split('T')[0],
+      scheduled_date: today,
+      scheduled_time: '10:00',
+      status: 'COMPLETED',
+      payment_method: 'PIX'
+    },
+    {
+      id: 'a4',
+      client_name: 'Bruno Mendes',
+      client_phone: '11977771004',
+      barber_id: '00000000-0000-0000-0000-000000000004',
+      barber_name: 'Rodrigo Lima',
+      service_id: '6',
+      service_name: 'Corte, Barba & Sobrancelha',
+      price_cents: 5500,
+      scheduled_date: today,
+      scheduled_time: '11:00',
+      status: 'COMPLETED',
+      payment_method: 'DINHEIRO'
+    },
+    {
+      id: 'a5',
+      client_name: 'Thiago Costa',
+      client_phone: '11977771005',
+      barber_id: '00000000-0000-0000-0000-000000000005',
+      barber_name: 'Bruno Rocha',
+      service_id: '5',
+      service_name: 'Corte & Sobrancelha',
+      price_cents: 3500,
+      scheduled_date: today,
+      scheduled_time: '11:30',
+      status: 'COMPLETED',
+      payment_method: 'CARTAO_DEBITO'
+    },
+    {
+      id: 'a6',
+      client_name: 'Vinicius Pereira',
+      client_phone: '11977771006',
+      barber_id: '00000000-0000-0000-0000-000000000001',
+      barber_name: 'Alexandre Duarte',
+      service_id: '16',
+      service_name: 'Pigmentação de Barba/Cabelo',
+      price_cents: 2000,
+      scheduled_date: today,
       scheduled_time: '14:00',
+      status: 'CONFIRMED',
+      payment_method: null
+    },
+    {
+      id: 'a7',
+      client_name: 'Eduardo Ramos',
+      client_phone: '11977771007',
+      barber_id: '00000000-0000-0000-0000-000000000002',
+      barber_name: 'Lucas Santana',
+      service_id: '4',
+      service_name: 'Corte & Barba',
+      price_cents: 5000,
+      scheduled_date: today,
+      scheduled_time: '15:00',
+      status: 'CONFIRMED',
+      payment_method: null
+    },
+    {
+      id: 'a8',
+      client_name: 'Gustavo Henrique',
+      client_phone: '11977771008',
+      barber_id: '00000000-0000-0000-0000-000000000003',
+      barber_name: 'Matheus Oliveira',
+      service_id: '11',
+      service_name: 'Luzes & Corte',
+      price_cents: 10000,
+      scheduled_date: today,
+      scheduled_time: '16:00',
       status: 'CONFIRMED',
       payment_method: null
     }

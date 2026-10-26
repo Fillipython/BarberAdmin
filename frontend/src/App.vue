@@ -15,7 +15,7 @@
             class="profile-select"
           >
             <option v-for="u in state.users" :key="u.id" :value="u.id">
-              {{ u.role === 'MASTER' ? '👑' : '✂️' }} {{ u.nickname || u.name }}
+              {{ u.name }} ({{ u.role === 'MASTER' ? 'Master' : 'Barbeiro' }})
             </option>
           </select>
         </div>
