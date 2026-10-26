@@ -33,6 +33,12 @@ target/
 *.war
 *.ear
 
+# SSL Certificates & Keys
+nginx/certs/
+*.key
+*.crt
+*.pem
+
 # Logs
 *.log
 npm-debug.log*

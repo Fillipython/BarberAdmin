@@ -72,6 +72,26 @@ services:
     networks:
       - barber_admin_network
 
+  # ==========================================
+  # Nginx Reverse Proxy (SSL / HTTPS)
+  # Atende https://fillipython.ddns.net/BarberAdmin/
+  # ==========================================
+  nginx:
+    image: nginx:alpine
+    container_name: barber_admin_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - barber_admin_network
+
 volumes:
   postgres_data:
     driver: local
