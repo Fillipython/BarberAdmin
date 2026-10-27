@@ -1,230 +1,150 @@
 import { reactive, computed } from 'vue';
+import { api } from '../services/api.js';
 
-const STORAGE_KEY = 'barber_admin_data_v4';
+const STORAGE_KEY = 'barber_admin_data_v5';
 
 const today = new Date().toISOString().split('T')[0];
 
 const INITIAL_DATA = {
   currentUser: {
-    id: '00000000-0000-0000-0000-000000000001',
-    name: 'Alexandre Duarte',
-    nickname: 'Alexandre',
-    email: 'master@barberadmin.com',
+    id: '8a350074-5524-453d-a625-2b25e7e8ca59',
+    name: 'Carlos Silva',
+    nickname: 'Mestre Carlos',
+    email: 'contato@barberman.com.br',
+    phone: '11988880001',
     role: 'MASTER',
     commission_percentage: 100,
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250'
   },
   users: [
     {
-      id: '00000000-0000-0000-0000-000000000001',
-      name: 'Alexandre Duarte',
-      nickname: 'Alexandre',
-      email: 'master@barberadmin.com',
+      id: '8a350074-5524-453d-a625-2b25e7e8ca59',
+      name: 'Carlos Silva',
+      nickname: 'Mestre Carlos',
+      email: 'contato@barberman.com.br',
       phone: '11988880001',
       role: 'MASTER',
       commission_percentage: 100,
       avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+      bio: 'Fundador e Administrador Geral do Barber Man. Especialista em visagismo e cortes premium.',
       is_active: true
     },
     {
-      id: '00000000-0000-0000-0000-000000000002',
+      id: '70b1fee3-a338-4444-90f9-f4551afc15fe',
       name: 'Lucas Santana',
-      nickname: 'Lucas',
-      email: 'lucas@barberadmin.com',
+      nickname: 'Lucas Navalha',
+      email: 'lucas@barberman.com.br',
       phone: '11988880002',
       role: 'BARBER',
       commission_percentage: 50,
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
+      bio: 'Especialista em degrade navalhado e barba terapia.',
       is_active: true
     },
     {
-      id: '00000000-0000-0000-0000-000000000003',
+      id: '0670b734-45c1-4435-ad0e-b8d6b3099c7e',
       name: 'Matheus Oliveira',
-      nickname: 'Matheus',
-      email: 'matheus@barberadmin.com',
+      nickname: 'Matheus Fade',
+      email: 'matheus@barberman.com.br',
       phone: '11988880003',
       role: 'BARBER',
       commission_percentage: 50,
       avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
-      is_active: true
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000004',
-      name: 'Rodrigo Lima',
-      nickname: 'Rodrigo',
-      email: 'rodrigo.barber@barberadmin.com',
-      phone: '11988880004',
-      role: 'BARBER',
-      commission_percentage: 50,
-      avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=250',
-      is_active: true
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000005',
-      name: 'Bruno Rocha',
-      nickname: 'Bruno',
-      email: 'bruno@barberadmin.com',
-      phone: '11988880005',
-      role: 'BARBER',
-      commission_percentage: 50,
-      avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=250',
+      bio: 'Especialista em platinados, luzes e cortes modernos.',
       is_active: true
     }
   ],
   services: [
-    { id: '1', name: 'Corte Tradicional', category: 'Cabelo', price_cents: 3000, duration_minutes: 30, is_active: true },
-    { id: '2', name: 'Corte Kids', category: 'Cabelo', price_cents: 3000, duration_minutes: 30, is_active: true },
-    { id: '3', name: 'Barba Tradicional', category: 'Barba', price_cents: 2500, duration_minutes: 30, is_active: true },
-    { id: '4', name: 'Corte & Barba', category: 'Combo', price_cents: 5000, duration_minutes: 60, is_active: true },
-    { id: '5', name: 'Corte & Sobrancelha', category: 'Combo', price_cents: 3500, duration_minutes: 30, is_active: true },
-    { id: '6', name: 'Corte, Barba & Sobrancelha', category: 'Combo', price_cents: 5500, duration_minutes: 60, is_active: true },
-    { id: '7', name: 'Pezinho & Barba', category: 'Combo', price_cents: 3000, duration_minutes: 30, is_active: true },
-    { id: '8', name: 'Corte & Barba Simples', category: 'Combo', price_cents: 4000, duration_minutes: 30, is_active: true },
-    { id: '9', name: 'Corte, Sobrancelha & Barba Simples', category: 'Combo', price_cents: 4500, duration_minutes: 30, is_active: true },
-    { id: '10', name: 'Platinado & Corte', category: 'Química', price_cents: 13000, duration_minutes: 60, is_active: true },
-    { id: '11', name: 'Luzes & Corte', category: 'Química', price_cents: 10000, duration_minutes: 60, is_active: true },
-    { id: '12', name: 'Botox / Desondulação', category: 'Química', price_cents: 5000, duration_minutes: 60, is_active: true },
-    { id: '13', name: 'Selagem Capilar', category: 'Química', price_cents: 7500, duration_minutes: 60, is_active: true },
-    { id: '14', name: 'Hidratação Profunda', category: 'Tratamento', price_cents: 2000, duration_minutes: 15, is_active: true },
-    { id: '15', name: 'Alisamento', category: 'Química', price_cents: 2000, duration_minutes: 15, is_active: true },
-    { id: '16', name: 'Pigmentação de Barba/Cabelo', category: 'Acabamento', price_cents: 2000, duration_minutes: 30, is_active: true }
+    { id: '16b14dc5-1df2-4041-a26b-4b292ca2db35', name: 'Botox/desondulacao', category: 'Química', price_cents: 5000, duration_minutes: 60, is_active: true },
+    { id: 'a7cb2ec3-f68f-42ff-859a-58666d3b727c', name: 'Selagem', category: 'Química', price_cents: 7500, duration_minutes: 60, is_active: true },
+    { id: 'b5eac08f-4c62-40be-b974-c00881aa99e0', name: 'Hidratacao', category: 'Tratamento', price_cents: 2000, duration_minutes: 15, is_active: true },
+    { id: '650e3202-2f1f-435f-91b9-442e47912118', name: 'Alisamento', category: 'Química', price_cents: 2000, duration_minutes: 15, is_active: true },
+    { id: '187ebf61-e48d-4665-a71e-8076768b3915', name: 'Pigmentacao', category: 'Acabamento', price_cents: 2000, duration_minutes: 30, is_active: true },
+    { id: '5379777b-3c95-42b4-9baa-06b621a325b8', name: 'Corte', category: 'Cabelo', price_cents: 3000, duration_minutes: 30, is_active: true },
+    { id: '1332638b-4d7f-467f-ba2e-c0f6614ee0c6', name: 'Corte kids', category: 'Cabelo', price_cents: 3000, duration_minutes: 30, is_active: true },
+    { id: 'bd3ac8a7-5955-4a97-a275-c621f635e635', name: 'Corte & Sobrancelha', category: 'Combo', price_cents: 3500, duration_minutes: 30, is_active: true },
+    { id: 'b629d3af-6e6c-4c2f-930c-becd3c78bb58', name: 'Platinado & Corte', category: 'Química', price_cents: 13000, duration_minutes: 60, is_active: true },
+    { id: '497594fe-cdc2-4ae5-a928-523ffd3fd522', name: 'Luzes & Corte', category: 'Química', price_cents: 10000, duration_minutes: 60, is_active: true },
+    { id: '85f353f0-229b-4586-9850-dc2b65434a63', name: 'Corte & Barba', category: 'Combo', price_cents: 5000, duration_minutes: 60, is_active: true },
+    { id: 'e3ce8dc4-44f0-4d62-95d1-8651ea77d353', name: 'Barba', category: 'Barba', price_cents: 2500, duration_minutes: 30, is_active: true },
+    { id: '80af0829-4a7f-4745-a945-c7c8fa2dd00d', name: 'Corte, Barba & Sobrancelha', category: 'Combo', price_cents: 5500, duration_minutes: 60, is_active: true },
+    { id: '9095beb0-8eb7-447c-aa9f-e52e03e65c36', name: 'Corte & barba simples', category: 'Combo', price_cents: 4000, duration_minutes: 30, is_active: true },
+    { id: '3dcf6649-b31e-4fad-b493-4d06c86b5ff1', name: 'Corte, sobrancelha & barba simples', category: 'Combo', price_cents: 4500, duration_minutes: 30, is_active: true },
+    { id: '3d0ecd31-320a-4f35-bd57-071a3bb66ec8', name: 'Pezinho & Barba', category: 'Combo', price_cents: 3000, duration_minutes: 30, is_active: true }
   ],
   clients: [
-    { id: 'c1', name: 'Gabriel Santos', phone: '11977771001', email: 'gabriel@email.com', notes: 'Gosta do degradê navalhado.', total_visits: 8, total_spent_cents: 40000 },
-    { id: 'c2', name: 'Rodrigo Albuquerque', phone: '11977771002', email: 'rodrigo@email.com', notes: 'Toalha quente na barba.', total_visits: 6, total_spent_cents: 30000 },
-    { id: 'c3', name: 'Rafael Moreira', phone: '11977771003', email: 'rafael@email.com', notes: 'Platinado e corte a cada 2 meses.', total_visits: 5, total_spent_cents: 55000 },
-    { id: 'c4', name: 'Bruno Mendes', phone: '11977771004', email: 'bruno.m@email.com', notes: 'Corte tradicional na tesoura.', total_visits: 12, total_spent_cents: 36000 },
-    { id: 'c5', name: 'Thiago Costa', phone: '11977771005', email: 'thiago@email.com', notes: 'Sobrancelha alinhada na navalha.', total_visits: 4, total_spent_cents: 18000 },
-    { id: 'c6', name: 'Vinicius Pereira', phone: '11977771006', email: 'vinicius@email.com', notes: 'Pigmentação de barba.', total_visits: 7, total_spent_cents: 35000 },
-    { id: 'c7', name: 'Eduardo Ramos', phone: '11977771007', email: 'eduardo@email.com', notes: 'Corte kids do filho também.', total_visits: 9, total_spent_cents: 45000 },
-    { id: 'c8', name: 'Gustavo Henrique', phone: '11977771008', email: 'gustavo@email.com', notes: 'Luzes e degrade.', total_visits: 3, total_spent_cents: 30000 },
-    { id: 'c9', name: 'Leonardo Souza', phone: '11977771009', email: 'leonardo@email.com', notes: 'Barboterapia completa.', total_visits: 5, total_spent_cents: 25000 },
-    { id: 'c10', name: 'Marcelo Antunes', phone: '11977771010', email: 'marcelo@email.com', notes: 'Cliente corporativo pontual.', total_visits: 11, total_spent_cents: 55000 }
+    { id: 'c1000000-0000-0000-0000-000000000001', name: 'Gabriel Santos', phone: '11977771001', email: 'gabriel.santos@exemplo.com', notes: 'Prefere degradê navalhado.', total_visits: 4, total_spent_cents: 20000 },
+    { id: 'c1000000-0000-0000-0000-000000000002', name: 'Rodrigo Albuquerque', phone: '11977771002', email: 'rodrigo.albuquerque@exemplo.com', notes: 'Toalha quente na barba.', total_visits: 6, total_spent_cents: 30000 },
+    { id: 'c1000000-0000-0000-0000-000000000003', name: 'Rafael Moreira', phone: '11977771003', email: 'rafael.moreira@exemplo.com', notes: 'Platinado e corte.', total_visits: 3, total_spent_cents: 39000 },
+    { id: 'c1000000-0000-0000-0000-000000000004', name: 'Bruno Mendes', phone: '11977771004', email: 'bruno.mendes@exemplo.com', notes: 'Corte tradicional tesoura.', total_visits: 8, total_spent_cents: 24000 },
+    { id: 'c1000000-0000-0000-0000-000000000005', name: 'Thiago Costa', phone: '11977771005', email: 'thiago.costa@exemplo.com', notes: 'Sobrancelha alinhada.', total_visits: 5, total_spent_cents: 17500 },
+    { id: 'c1000000-0000-0000-0000-000000000006', name: 'Vinicius Pereira', phone: '11977771006', email: 'vinicius.pereira@exemplo.com', notes: 'Pigmentação de barba.', total_visits: 2, total_spent_cents: 10000 },
+    { id: 'c1000000-0000-0000-0000-000000000007', name: 'Eduardo Ramos', phone: '11977771007', email: 'eduardo.ramos@exemplo.com', notes: 'Corte infantil do filho.', total_visits: 7, total_spent_cents: 21000 },
+    { id: 'c1000000-0000-0000-0000-000000000008', name: 'Gustavo Henrique', phone: '11977771008', email: 'gustavo.henrique@exemplo.com', notes: 'Luzes e degrade.', total_visits: 3, total_spent_cents: 30000 },
+    { id: 'c1000000-0000-0000-0000-000000000009', name: 'Leonardo Souza', phone: '11977771009', email: 'leonardo.souza@exemplo.com', notes: 'Barboterapia completa.', total_visits: 5, total_spent_cents: 25000 },
+    { id: 'c1000000-0000-0000-0000-000000000010', name: 'Marcelo Antunes', phone: '11977771010', email: 'marcelo.antunes@exemplo.com', notes: 'Cliente corporativo pontual.', total_visits: 9, total_spent_cents: 45000 }
   ],
   appointments: [
     {
-      id: 'a1',
-      client_name: 'Rodrigo Albuquerque',
-      client_phone: '11977771002',
-      barber_id: '00000000-0000-0000-0000-000000000001',
-      barber_name: 'Alexandre Duarte',
-      service_id: '4',
-      service_name: 'Corte & Barba',
-      price_cents: 5000,
-      scheduled_date: today,
-      scheduled_time: '09:00',
-      status: 'COMPLETED',
-      payment_method: 'PIX'
-    },
-    {
-      id: 'a2',
+      id: 'a1000000-0000-0000-0000-000000000001',
       client_name: 'Gabriel Santos',
       client_phone: '11977771001',
-      barber_id: '00000000-0000-0000-0000-000000000002',
-      barber_name: 'Lucas Santana',
-      service_id: '1',
-      service_name: 'Corte Tradicional',
-      price_cents: 3000,
-      scheduled_date: today,
-      scheduled_time: '09:30',
-      status: 'COMPLETED',
-      payment_method: 'CARTAO_CREDITO'
-    },
-    {
-      id: 'a3',
-      client_name: 'Rafael Moreira',
-      client_phone: '11977771003',
-      barber_id: '00000000-0000-0000-0000-000000000003',
-      barber_name: 'Matheus Oliveira',
-      service_id: '10',
+      barber_id: '8a350074-5524-453d-a625-2b25e7e8ca59',
+      barber_name: 'Carlos Silva',
+      service_id: 'b629d3af-6e6c-4c2f-930c-becd3c78bb58',
       service_name: 'Platinado & Corte',
       price_cents: 13000,
       scheduled_date: today,
-      scheduled_time: '10:00',
-      status: 'COMPLETED',
+      scheduled_time: '12:00',
+      status: 'CONFIRMED',
       payment_method: 'PIX'
     },
     {
-      id: 'a4',
-      client_name: 'Bruno Mendes',
-      client_phone: '11977771004',
-      barber_id: '00000000-0000-0000-0000-000000000004',
-      barber_name: 'Rodrigo Lima',
-      service_id: '6',
-      service_name: 'Corte, Barba & Sobrancelha',
-      price_cents: 5500,
-      scheduled_date: today,
-      scheduled_time: '11:00',
-      status: 'COMPLETED',
-      payment_method: 'DINHEIRO'
-    },
-    {
-      id: 'a5',
-      client_name: 'Thiago Costa',
-      client_phone: '11977771005',
-      barber_id: '00000000-0000-0000-0000-000000000005',
-      barber_name: 'Bruno Rocha',
-      service_id: '5',
-      service_name: 'Corte & Sobrancelha',
-      price_cents: 3500,
-      scheduled_date: today,
-      scheduled_time: '11:30',
-      status: 'COMPLETED',
-      payment_method: 'CARTAO_DEBITO'
-    },
-    {
-      id: 'a6',
-      client_name: 'Vinicius Pereira',
-      client_phone: '11977771006',
-      barber_id: '00000000-0000-0000-0000-000000000001',
-      barber_name: 'Alexandre Duarte',
-      service_id: '16',
-      service_name: 'Pigmentação de Barba/Cabelo',
-      price_cents: 2000,
-      scheduled_date: today,
-      scheduled_time: '14:00',
-      status: 'CONFIRMED',
-      payment_method: null
-    },
-    {
-      id: 'a7',
-      client_name: 'Eduardo Ramos',
-      client_phone: '11977771007',
-      barber_id: '00000000-0000-0000-0000-000000000002',
+      id: 'a1000000-0000-0000-0000-000000000002',
+      client_name: 'Rodrigo Albuquerque',
+      client_phone: '11977771002',
+      barber_id: '70b1fee3-a338-4444-90f9-f4551afc15fe',
       barber_name: 'Lucas Santana',
-      service_id: '4',
+      service_id: '85f353f0-229b-4586-9850-dc2b65434a63',
       service_name: 'Corte & Barba',
       price_cents: 5000,
       scheduled_date: today,
-      scheduled_time: '15:00',
-      status: 'CONFIRMED',
-      payment_method: null
-    },
-    {
-      id: 'a8',
-      client_name: 'Gustavo Henrique',
-      client_phone: '11977771008',
-      barber_id: '00000000-0000-0000-0000-000000000003',
-      barber_name: 'Matheus Oliveira',
-      service_id: '11',
-      service_name: 'Luzes & Corte',
-      price_cents: 10000,
-      scheduled_date: today,
-      scheduled_time: '16:00',
+      scheduled_time: '14:00',
       status: 'CONFIRMED',
       payment_method: null
     }
   ]
 };
 
+const AUTH_TOKEN_KEY = 'barber_admin_auth_token_v1';
+const AUTH_USER_KEY = 'barber_admin_auth_user_v1';
+
 function loadSavedState() {
+  let loaded = { ...INITIAL_DATA };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      loaded = { ...INITIAL_DATA, ...JSON.parse(raw) };
+    }
   } catch (e) {
     console.error('Failed to load state from localStorage', e);
   }
-  return INITIAL_DATA;
+
+  // Verificar se há sessão autenticada ativa no localStorage
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const savedUserRaw = localStorage.getItem(AUTH_USER_KEY);
+  let savedUser = null;
+  if (savedUserRaw) {
+    try {
+      savedUser = JSON.parse(savedUserRaw);
+    } catch (e) {}
+  }
+
+  loaded.isAuthenticated = Boolean(token && savedUser);
+  loaded.token = token || null;
+  loaded.currentUser = savedUser || null;
+
+  return loaded;
 }
 
 export const state = reactive(loadSavedState());
@@ -238,12 +158,49 @@ export function saveState() {
 }
 
 // Helpers & Actions
-export const isMaster = computed(() => state.currentUser.role === 'MASTER');
+export const isMaster = computed(() => state.currentUser?.role === 'MASTER');
+
+export function isUserAuthenticated() {
+  return Boolean(state.isAuthenticated && state.currentUser);
+}
+
+export async function login(email, password) {
+  const response = await api.auth.login({ email, password });
+  state.isAuthenticated = true;
+  state.token = response.token;
+  state.currentUser = {
+    id: response.id,
+    name: response.name,
+    nickname: response.nickname,
+    email: response.email,
+    phone: response.phone,
+    role: response.role,
+    commission_percentage: Number(response.commissionPercentage) || 100,
+    avatar_url: response.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250'
+  };
+
+  localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.currentUser));
+  saveState();
+
+  syncFromBackend();
+  return response;
+}
+
+export function logout() {
+  state.isAuthenticated = false;
+  state.token = null;
+  state.currentUser = null;
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_USER_KEY);
+  saveState();
+}
 
 export function switchUser(userId) {
   const user = state.users.find(u => u.id === userId);
   if (user) {
     state.currentUser = { ...user };
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.currentUser));
     saveState();
   }
 }
@@ -348,6 +305,38 @@ export function updateAppointmentService(id, serviceId, serviceName, priceCents)
     saveState();
   }
 }
+
+// Sincronização automática em segundo plano com a API
+export async function syncFromBackend() {
+  try {
+    const [staffList, servicesList, clientsList] = await Promise.all([
+      api.staff.list().catch(() => null),
+      api.services.list().catch(() => null),
+      api.clients.list().catch(() => null)
+    ]);
+
+    if (staffList && staffList.length > 0) {
+      state.users = staffList;
+      const current = staffList.find(u => u.id === state.currentUser?.id) || staffList[0];
+      if (current) state.currentUser = current;
+    }
+
+    if (servicesList && servicesList.length > 0) {
+      state.services = servicesList;
+    }
+
+    if (clientsList && clientsList.length > 0) {
+      state.clients = clientsList;
+    }
+
+    saveState();
+  } catch (err) {
+    console.warn('[BarberAdmin State] Sincronização em segundo plano indisponível no momento:', err.message);
+  }
+}
+
+// Dispara sincronização inicial
+syncFromBackend();
 
 // Formatters
 export function formatCurrency(cents) {

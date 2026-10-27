@@ -226,119 +226,87 @@ ORDER BY reference_year DESC, reference_month DESC;
 -- =============================================================================
 -- 9. DADOS INICIAIS (SEEDS)
 --    - Senha padrão inicial para todos: "admin123"
---      Hash bcrypt: $2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG
+--      Hash bcrypt: $2b$10$HE9vLiZI187bFCw7eMg7reU4TU5ss8VAkPskkbGQXkSjUVVyKRJH6
 -- =============================================================================
 
--- Barbeiros (1 Master e 4 Barbeiros de equipe)
+-- Barbeiros Reais (Sincronizados com BarberNotify)
 INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commission_percentage, bio) VALUES
 (
-    '00000000-0000-0000-0000-000000000001',
-    'Alexandre Duarte',
-    'Alexandre',
-    'master@barberadmin.com',
-    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
+    '8a350074-5524-453d-a625-2b25e7e8ca59',
+    'Carlos Silva',
+    'Mestre Carlos',
+    'contato@barberman.com.br',
+    '$2b$10$HE9vLiZI187bFCw7eMg7reU4TU5ss8VAkPskkbGQXkSjUVVyKRJH6',
     '11988880001',
     'MASTER',
     100.00,
-    'Fundador e Barbeiro Master. Gestão geral, visagismo e cortes premium.'
+    'Fundador e Administrador Geral do Barber Man. Especialista em visagismo e cortes premium.'
 ),
 (
-    '00000000-0000-0000-0000-000000000002',
+    '70b1fee3-a338-4444-90f9-f4551afc15fe',
     'Lucas Santana',
-    'Lucas',
-    'lucas@barberadmin.com',
-    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
+    'Lucas Navalha',
+    'lucas@barberman.com.br',
+    '$2b$10$HE9vLiZI187bFCw7eMg7reU4TU5ss8VAkPskkbGQXkSjUVVyKRJH6',
     '11988880002',
     'BARBER',
     50.00,
-    'Especialista em degradê navalhado e barba terapia.'
+    'Especialista em degrade navalhado e barba terapia.'
 ),
 (
-    '00000000-0000-0000-0000-000000000003',
+    '0670b734-45c1-4435-ad0e-b8d6b3099c7e',
     'Matheus Oliveira',
-    'Matheus',
-    'matheus@barberadmin.com',
-    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
+    'Matheus Fade',
+    'matheus@barberman.com.br',
+    '$2b$10$HE9vLiZI187bFCw7eMg7reU4TU5ss8VAkPskkbGQXkSjUVVyKRJH6',
     '11988880003',
     'BARBER',
     50.00,
     'Especialista em platinados, luzes e cortes modernos.'
-),
-(
-    '00000000-0000-0000-0000-000000000004',
-    'Rodrigo Lima',
-    'Rodrigo',
-    'rodrigo.barber@barberadmin.com',
-    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
-    '11988880004',
-    'BARBER',
-    50.00,
-    'Especialista em corte clássico e design de sobrancelha.'
-),
-(
-    '00000000-0000-0000-0000-000000000005',
-    'Bruno Rocha',
-    'Bruno',
-    'bruno@barberadmin.com',
-    '$2a$10$wT8hM0.UeW1m61k1qP102OfqR/5xR1iC2WvM8n2c8s7oY1E8kZ2wG',
-    '11988880005',
-    'BARBER',
-    50.00,
-    'Especialista em visagismo e finalizações modernas.'
 )
-ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, nickname = EXCLUDED.nickname;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, nickname = EXCLUDED.nickname, email = EXCLUDED.email, password_hash = EXCLUDED.password_hash;
 
--- Tabela de Serviços Completa
-INSERT INTO services (name, description, category, price_cents, duration_minutes, display_order) VALUES
-('Corte Tradicional', 'Corte masculino na tesoura ou máquina com acabamento', 'Cabelo', 3000, 30, 1),
-('Corte Kids', 'Corte infantil com paciência e cuidado', 'Cabelo', 3000, 30, 2),
-('Barba Tradicional', 'Modelagem de barba com toalha quente e balm', 'Barba', 2500, 30, 3),
-('Corte & Barba', 'Combo completo corte de cabelo e barba com toalha quente', 'Combo', 5000, 60, 4),
-('Corte & Sobrancelha', 'Corte masculino alinhado com design de sobrancelha', 'Combo', 3500, 30, 5),
-('Corte, Barba & Sobrancelha', 'Experiência completa de cuidado masculino', 'Combo', 5500, 60, 6),
-('Pezinho & Barba', 'Alinhamento do contorno do cabelo e barba feita', 'Combo', 3000, 30, 7),
-('Corte & Barba Simples', 'Corte e barba alinhada express', 'Combo', 4000, 30, 8),
-('Corte, Sobrancelha & Barba Simples', 'Pacote express de cuidados', 'Combo', 4500, 30, 9),
-('Platinado & Corte', 'Descoloração global efeito platinado e corte estilizado', 'Química', 13000, 60, 10),
-('Luzes & Corte', 'Mechas/luzes modernas com corte', 'Química', 10000, 60, 11),
-('Botox / Desondulação', 'Redução de volume e alinhamento dos fios', 'Química', 5000, 60, 12),
-('Selagem Capilar', 'Tratamento intensivo para selar cutículas e brilho', 'Química', 7500, 60, 13),
-('Hidratação Profunda', 'Tratamento nutritivo pós-corte', 'Tratamento', 2000, 15, 14),
-('Alisamento', 'Alisamento capilar masculino de alta durabilidade', 'Química', 2000, 15, 15),
-('Pigmentação de Barba/Cabelo', 'Camuflagem de falhas e realce de contorno', 'Acabamento', 2000, 30, 16)
-ON CONFLICT DO NOTHING;
+-- Tabela de Serviços Completa (16 Serviços Reais do BarberNotify)
+INSERT INTO services (id, name, description, category, price_cents, duration_minutes, display_order) VALUES
+('16b14dc5-1df2-4041-a26b-4b292ca2db35', 'Botox/desondulacao', 'Redução de volume e alinhamento dos fios', 'Química', 5000, 60, 1),
+('a7cb2ec3-f68f-42ff-859a-58666d3b727c', 'Selagem', 'Tratamento intensivo para selar cutículas e brilho', 'Química', 7500, 60, 2),
+('b5eac08f-4c62-40be-b974-c00881aa99e0', 'Hidratacao', 'Tratamento nutritivo pós-corte', 'Tratamento', 2000, 15, 3),
+('650e3202-2f1f-435f-91b9-442e47912118', 'Alisamento', 'Alisamento capilar masculino de alta durabilidade', 'Química', 2000, 15, 4),
+('187ebf61-e48d-4665-a71e-8076768b3915', 'Pigmentacao', 'Camuflagem de falhas e realce de contorno', 'Acabamento', 2000, 30, 5),
+('5379777b-3c95-42b4-9baa-06b621a325b8', 'Corte', 'Corte masculino tradicional tesoura/máquina', 'Cabelo', 3000, 30, 6),
+('1332638b-4d7f-467f-ba2e-c0f6614ee0c6', 'Corte kids', 'Corte infantil com paciência e cuidado', 'Cabelo', 3000, 30, 7),
+('bd3ac8a7-5955-4a97-a275-c621f635e635', 'Corte & Sobrancelha', 'Corte masculino alinhado com design de sobrancelha', 'Combo', 3500, 30, 8),
+('b629d3af-6e6c-4c2f-930c-becd3c78bb58', 'Platinado & Corte', 'Descoloração global efeito platinado e corte estilizado', 'Química', 13000, 60, 9),
+('497594fe-cdc2-4ae5-a928-523ffd3fd522', 'Luzes & Corte', 'Mechas/luzes modernas com corte', 'Química', 10000, 60, 10),
+('85f353f0-229b-4586-9850-dc2b65434a63', 'Corte & Barba', 'Combo completo corte de cabelo e barba com toalha quente', 'Combo', 5000, 60, 11),
+('e3ce8dc4-44f0-4d62-95d1-8651ea77d353', 'Barba', 'Modelagem de barba com toalha quente e balm', 'Barba', 2500, 30, 12),
+('80af0829-4a7f-4745-a945-c7c8fa2dd00d', 'Corte, Barba & Sobrancelha', 'Experiência completa de cuidado masculino', 'Combo', 5500, 60, 13),
+('9095beb0-8eb7-447c-aa9f-e52e03e65c36', 'Corte & barba simples', 'Corte e barba alinhada express', 'Combo', 4000, 30, 14),
+('3dcf6649-b31e-4fad-b493-4d06c86b5ff1', 'Corte, sobrancelha & barba simples', 'Pacote express de cuidados', 'Combo', 4500, 30, 15),
+('3d0ecd31-320a-4f35-bd57-071a3bb66ec8', 'Pezinho & Barba', 'Alinhamento do contorno do cabelo e barba feita', 'Combo', 3000, 30, 16)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, price_cents = EXCLUDED.price_cents, duration_minutes = EXCLUDED.duration_minutes;
 
--- Clientes Iniciais (10 Clientes)
+-- Clientes Fictícios (10 Clientes de Exemplo)
 INSERT INTO clients (id, name, phone, email, notes, total_visits, total_spent_cents) VALUES
-('10000000-0000-0000-0000-000000000001', 'Gabriel Santos', '11977771001', 'gabriel@email.com', 'Gosta do degradê navalhado.', 8, 40000),
-('10000000-0000-0000-0000-000000000002', 'Rodrigo Albuquerque', '11977771002', 'rodrigo@email.com', 'Toalha quente na barba.', 6, 30000),
-('10000000-0000-0000-0000-000000000003', 'Rafael Moreira', '11977771003', 'rafael@email.com', 'Platinado e corte a cada 2 meses.', 5, 55000),
-('10000000-0000-0000-0000-000000000004', 'Bruno Mendes', '11977771004', 'bruno.m@email.com', 'Corte tradicional na tesoura.', 12, 36000),
-('10000000-0000-0000-0000-000000000005', 'Thiago Costa', '11977771005', 'thiago@email.com', 'Sobrancelha alinhada na navalha.', 4, 18000),
-('10000000-0000-0000-0000-000000000006', 'Vinicius Pereira', '11977771006', 'vinicius@email.com', 'Pigmentação de barba.', 7, 35000),
-('10000000-0000-0000-0000-000000000007', 'Eduardo Ramos', '11977771007', 'eduardo@email.com', 'Corte kids do filho também.', 9, 45000),
-('10000000-0000-0000-0000-000000000008', 'Gustavo Henrique', '11977771008', 'gustavo@email.com', 'Luzes e degrade.', 3, 30000),
-('10000000-0000-0000-0000-000000000009', 'Leonardo Souza', '11977771009', 'leonardo@email.com', 'Barboterapia completa.', 5, 25000),
-('10000000-0000-0000-0000-000000000010', 'Marcelo Antunes', '11977771010', 'marcelo@email.com', 'Cliente corporativo pontual.', 11, 55000)
-ON CONFLICT (phone) DO NOTHING;
+('c1000000-0000-0000-0000-000000000001', 'Gabriel Santos', '11977771001', 'gabriel.santos@exemplo.com', 'Prefere degradê navalhado.', 4, 20000),
+('c1000000-0000-0000-0000-000000000002', 'Rodrigo Albuquerque', '11977771002', 'rodrigo.albuquerque@exemplo.com', 'Toalha quente na barba.', 6, 30000),
+('c1000000-0000-0000-0000-000000000003', 'Rafael Moreira', '11977771003', 'rafael.moreira@exemplo.com', 'Platinado e corte.', 3, 39000),
+('c1000000-0000-0000-0000-000000000004', 'Bruno Mendes', '11977771004', 'bruno.mendes@exemplo.com', 'Corte tradicional tesoura.', 8, 24000),
+('c1000000-0000-0000-0000-000000000005', 'Thiago Costa', '11977771005', 'thiago.costa@exemplo.com', 'Sobrancelha alinhada.', 5, 17500),
+('c1000000-0000-0000-0000-000000000006', 'Vinicius Pereira', '11977771006', 'vinicius.pereira@exemplo.com', 'Pigmentação de barba.', 2, 10000),
+('c1000000-0000-0000-0000-000000000007', 'Eduardo Ramos', '11977771007', 'eduardo.ramos@exemplo.com', 'Corte infantil do filho.', 7, 21000),
+('c1000000-0000-0000-0000-000000000008', 'Gustavo Henrique', '11977771008', 'gustavo.henrique@exemplo.com', 'Luzes e degrade.', 3, 30000),
+('c1000000-0000-0000-0000-000000000009', 'Leonardo Souza', '11977771009', 'leonardo.souza@exemplo.com', 'Barboterapia completa.', 5, 25000),
+('c1000000-0000-0000-0000-000000000010', 'Marcelo Antunes', '11977771010', 'marcelo.antunes@exemplo.com', 'Cliente corporativo pontual.', 9, 45000)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, phone = EXCLUDED.phone, email = EXCLUDED.email;
 
--- Agendamentos de Exemplo
-INSERT INTO appointments (id, client_id, barber_id, scheduled_at, end_at, status, total_price_cents, final_price_cents, notes, completed_at) VALUES
-('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', CURRENT_DATE + TIME '09:00:00', CURRENT_DATE + TIME '10:00:00', 'COMPLETED', 5000, 5000, 'Corte & Barba finalizado.', CURRENT_DATE + TIME '10:00:00'),
-('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', CURRENT_DATE + TIME '09:30:00', CURRENT_DATE + TIME '10:00:00', 'COMPLETED', 3000, 3000, 'Corte Tradicional.', CURRENT_DATE + TIME '10:00:00'),
-('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', CURRENT_DATE + TIME '10:00:00', CURRENT_DATE + TIME '11:00:00', 'COMPLETED', 13000, 13000, 'Platinado & Corte.', CURRENT_DATE + TIME '11:00:00'),
-('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', CURRENT_DATE + TIME '11:00:00', CURRENT_DATE + TIME '12:00:00', 'COMPLETED', 5500, 5500, 'Corte, Barba & Sobrancelha.', CURRENT_DATE + TIME '12:00:00'),
-('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', CURRENT_DATE + TIME '11:30:00', CURRENT_DATE + TIME '12:00:00', 'COMPLETED', 3500, 3500, 'Corte & Sobrancelha.', CURRENT_DATE + TIME '12:00:00'),
-('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000001', CURRENT_DATE + TIME '14:00:00', CURRENT_DATE + TIME '14:30:00', 'CONFIRMED', 2000, 2000, 'Pigmentação agendada.', NULL),
-('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', CURRENT_DATE + TIME '15:00:00', CURRENT_DATE + TIME '16:00:00', 'CONFIRMED', 5000, 5000, 'Corte & Barba agendado.', NULL),
-('20000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000003', CURRENT_DATE + TIME '16:00:00', CURRENT_DATE + TIME '17:00:00', 'CONFIRMED', 10000, 10000, 'Luzes & Corte agendado.', NULL)
-ON CONFLICT DO NOTHING;
+-- Agendamentos Fictícios de Exemplo
+INSERT INTO appointments (id, client_id, barber_id, scheduled_at, end_at, status, total_price_cents, discount_cents, final_price_cents, notes, completed_at) VALUES
+('a1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001', '8a350074-5524-453d-a625-2b25e7e8ca59', CURRENT_DATE + TIME '12:00:00', CURRENT_DATE + TIME '13:00:00', 'COMPLETED', 13000, 0, 13000, 'Platinado e Corte', CURRENT_DATE + TIME '13:00:00'),
+('a1000000-0000-0000-0000-000000000002', 'c1000000-0000-0000-0000-000000000002', '70b1fee3-a338-4444-90f9-f4551afc15fe', CURRENT_DATE + TIME '14:00:00', CURRENT_DATE + TIME '15:00:00', 'CONFIRMED', 5000, 0, 5000, 'Corte & Barba', NULL)
+ON CONFLICT (id) DO NOTHING;
 
--- Registros Financeiros das Ordens Concluídas
+-- Registros Financeiros Fictícios dos Agendamentos
 INSERT INTO financial_records (appointment_id, barber_id, client_id, type, amount_cents, barber_commission_cents, shop_net_cents, payment_method, payment_status, paid_at, description) VALUES
-('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'RECEITA_SERVICO', 5000, 5000, 0, 'PIX', 'PAGO', CURRENT_DATE + TIME '10:05:00', 'Alexandre Duarte - Corte & Barba (Rodrigo)'),
-('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'RECEITA_SERVICO', 3000, 1500, 1500, 'CARTAO_CREDITO', 'PAGO', CURRENT_DATE + TIME '10:02:00', 'Lucas Santana - Corte (Gabriel)'),
-('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'RECEITA_SERVICO', 13000, 6500, 6500, 'PIX', 'PAGO', CURRENT_DATE + TIME '11:05:00', 'Matheus Oliveira - Platinado (Rafael)'),
-('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'RECEITA_SERVICO', 5500, 2750, 2750, 'DINHEIRO', 'PAGO', CURRENT_DATE + TIME '12:05:00', 'Rodrigo Lima - Corte & Barba (Bruno)'),
-('20000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'RECEITA_SERVICO', 3500, 1750, 1750, 'CARTAO_DEBITO', 'PAGO', CURRENT_DATE + TIME '12:02:00', 'Bruno Rocha - Corte & Sobrancelha (Thiago)')
+('a1000000-0000-0000-0000-000000000001', '8a350074-5524-453d-a625-2b25e7e8ca59', 'c1000000-0000-0000-0000-000000000001', 'RECEITA_SERVICO', 13000, 13000, 0, 'PIX', 'PAGO', CURRENT_DATE + TIME '13:05:00', 'Recebimento de Agendamento')
 ON CONFLICT DO NOTHING;

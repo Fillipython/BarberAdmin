@@ -1,23 +1,34 @@
 <template>
   <div class="app-layout">
-    <!-- COMPACT TOP BAR -->
-    <header class="app-topbar">
+    <!-- COMPACT TOP BAR (Oculto na tela de login) -->
+    <header v-if="route.name !== 'login' && state.currentUser" class="app-topbar">
       <!-- Upper minimal brand & profile row -->
       <div class="top-row">
         <div class="brand">
           <span class="brand-text">Barber<span class="gold-accent">Admin</span></span>
         </div>
 
-        <div class="profile-switch">
-          <select 
-            :value="state.currentUser.id" 
-            @change="handleUserSwitch($event.target.value)" 
-            class="profile-select"
-          >
-            <option v-for="u in state.users" :key="u.id" :value="u.id">
-              {{ u.name }} ({{ u.role === 'MASTER' ? 'Master' : 'Barbeiro' }})
-            </option>
-          </select>
+        <div class="user-actions">
+          <div class="profile-switch">
+            <select 
+              :value="state.currentUser.id" 
+              @change="handleUserSwitch($event.target.value)" 
+              class="profile-select"
+            >
+              <option v-for="u in state.users" :key="u.id" :value="u.id">
+                {{ u.nickname || u.name }} ({{ u.role === 'MASTER' ? 'Master' : 'Barbeiro' }})
+              </option>
+            </select>
+          </div>
+
+          <button class="logout-btn" @click="handleLogout" title="Sair da conta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-icon">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span class="logout-label">Sair</span>
+          </button>
         </div>
       </div>
 
@@ -80,10 +91,19 @@
 </template>
 
 <script setup>
-import { state, isMaster, switchUser } from './store/state.js';
+import { useRoute, useRouter } from 'vue-router';
+import { state, isMaster, switchUser, logout } from './store/state.js';
+
+const route = useRoute();
+const router = useRouter();
 
 function handleUserSwitch(userId) {
   switchUser(userId);
+}
+
+function handleLogout() {
+  logout();
+  router.push({ name: 'login' });
 }
 </script>
 
@@ -93,6 +113,38 @@ function handleUserSwitch(userId) {
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--bg-app);
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ffffff;
+}
+
+.logout-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .app-topbar {

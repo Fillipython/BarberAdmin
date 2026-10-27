@@ -3,15 +3,15 @@ function resolveApiBase() {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     const protocol = window.location.protocol;
-    if (host.includes('fillipython.ddns.net')) {
-      return `${protocol}//fillipython.ddns.net:8080`;
+    if (host.includes('fillipython.ddns.net') || window.location.pathname.startsWith('/BarberAdmin')) {
+      return `${protocol}//${window.location.host}/BarberAdmin/api`;
     }
   }
-  return 'http://localhost:8080';
+  return 'http://localhost:8080/api';
 }
 
 const API_BASE = resolveApiBase();
-const V1 = `${API_BASE}/api/v1`;
+const V1 = `${API_BASE}/v1`;
 
 async function request(endpoint, options = {}) {
   const url = `${V1}${endpoint}`;
@@ -35,6 +35,14 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
+  // Autenticação
+  auth: {
+    login: (credentials) => request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    })
+  },
+
   // BarberNotify
   barbernotify: {
     sendWebhookEvent: (eventData) => request('/barbernotify/webhook', {
