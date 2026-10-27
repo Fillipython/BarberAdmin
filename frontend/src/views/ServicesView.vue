@@ -41,13 +41,13 @@
         v-for="service in filteredServices" 
         :key="service.id" 
         class="clean-panel service-card"
-        :class="{ 'inactive-service': !service.is_active }"
+        :class="{ 'inactive-service': (service.is_active ?? service.isActive) === false }"
       >
         <div class="service-top">
           <span class="badge" :class="getCategoryBadgeClass(service.category)">
             {{ service.category }}
           </span>
-          <span class="duration-tag">{{ service.duration_minutes }} min</span>
+          <span class="duration-tag">{{ service.duration_minutes ?? service.durationMinutes }} min</span>
         </div>
 
         <div class="service-body">
@@ -58,7 +58,7 @@
         <div class="service-bottom">
           <div class="price-box">
             <span class="price-label">Preço:</span>
-            <span class="price-val gold-text">{{ formatCurrency(service.price_cents) }}</span>
+            <span class="price-val gold-text">{{ formatCurrency(service.price_cents ?? service.priceCents) }}</span>
           </div>
 
           <div v-if="isMaster" class="service-actions">
@@ -67,10 +67,10 @@
             </button>
             <button 
               class="btn btn-sm" 
-              :class="service.is_active ? 'btn-danger' : 'btn-primary'" 
+              :class="(service.is_active ?? service.isActive) !== false ? 'btn-danger' : 'btn-primary'" 
               @click="toggleServiceStatus(service.id)"
             >
-              {{ service.is_active ? 'Desativar' : 'Ativar' }}
+              {{ (service.is_active ?? service.isActive) !== false ? 'Desativar' : 'Ativar' }}
             </button>
           </div>
         </div>
@@ -190,10 +190,10 @@ function openEditModal(service) {
   form.value = {
     name: service.name,
     category: service.category,
-    duration_minutes: service.duration_minutes,
+    duration_minutes: service.duration_minutes ?? service.durationMinutes ?? 30,
     description: service.description || ''
   };
-  formPriceDisplay.value = service.price_cents / 100;
+  formPriceDisplay.value = ((service.price_cents ?? service.priceCents) || 0) / 100;
   showModal.value = true;
 }
 

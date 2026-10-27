@@ -122,8 +122,8 @@
           <div class="form-group">
             <label class="form-label">Tipo de Serviço</label>
             <select v-model="editSelectedServiceId" @change="onEditServiceChange" class="form-select">
-              <option v-for="s in state.services.filter(s => s.is_active)" :key="s.id" :value="s.id">
-                {{ s.name }} — {{ formatCurrency(s.price_cents) }}
+              <option v-for="s in activeServices" :key="s.id" :value="s.id">
+                {{ s.name }} — {{ formatCurrency(s.price_cents ?? s.priceCents) }}
               </option>
             </select>
           </div>
@@ -194,8 +194,8 @@
             <label class="form-label">Serviço *</label>
             <select v-model="form.service_id" @change="onServiceSelect" required class="form-select">
               <option value="">Selecione o serviço...</option>
-              <option v-for="s in state.services.filter(s => s.is_active)" :key="s.id" :value="s.id">
-                {{ s.name }} ({{ formatCurrency(s.price_cents) }})
+              <option v-for="s in activeServices" :key="s.id" :value="s.id">
+                {{ s.name }} ({{ formatCurrency(s.price_cents ?? s.priceCents) }})
               </option>
             </select>
 
@@ -323,6 +323,10 @@ const filterDate = computed(() => {
   return currentDateObj.value.toISOString().split('T')[0];
 });
 
+const activeServices = computed(() => {
+  return (state.services || []).filter(s => (s.is_active ?? s.isActive) !== false);
+});
+
 const isToday = computed(() => {
   const todayStr = new Date().toISOString().split('T')[0];
   return filterDate.value === todayStr;
@@ -363,11 +367,12 @@ const filteredAppointments = computed(() => {
 });
 
 function openNewModal() {
+  const defaultService = activeServices.value[0];
   form.value = {
     client_name: '',
     client_phone: '',
-    barber_id: state.currentUser.id,
-    service_id: state.services[0]?.id || '',
+    barber_id: state.currentUser?.id || state.users[0]?.id || '',
+    service_id: defaultService?.id || '',
     scheduled_time: '14:00'
   };
   onServiceSelect();
@@ -385,7 +390,7 @@ function onClientSelect() {
 function onServiceSelect() {
   const service = state.services.find(s => s.id === form.value.service_id);
   if (service) {
-    formPriceDisplay.value = service.price_cents / 100;
+    formPriceDisplay.value = ((service.price_cents ?? service.priceCents) || 0) / 100;
   }
 }
 
@@ -417,7 +422,7 @@ function openEditPriceModal(app) {
 function onEditServiceChange() {
   const service = state.services.find(s => s.id === editSelectedServiceId.value);
   if (service) {
-    quickEditPriceDisplay.value = service.price_cents / 100;
+    quickEditPriceDisplay.value = ((service.price_cents ?? service.priceCents) || 0) / 100;
   }
 }
 

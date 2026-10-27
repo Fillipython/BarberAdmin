@@ -119,6 +119,51 @@ const INITIAL_DATA = {
 const AUTH_TOKEN_KEY = 'barber_admin_auth_token_v1';
 const AUTH_USER_KEY = 'barber_admin_auth_user_v1';
 
+export function normalizeService(s) {
+  if (!s) return s;
+  const price = s.price_cents ?? s.priceCents ?? 0;
+  const duration = s.duration_minutes ?? s.durationMinutes ?? 30;
+  const active = (s.is_active ?? s.isActive) !== false;
+  return {
+    ...s,
+    price_cents: price,
+    priceCents: price,
+    duration_minutes: duration,
+    durationMinutes: duration,
+    is_active: active,
+    isActive: active
+  };
+}
+
+export function normalizeUser(u) {
+  if (!u) return u;
+  const active = (u.is_active ?? u.isActive) !== false;
+  const commission = Number(u.commission_percentage ?? u.commissionPercentage) || 100;
+  const avatar = u.avatar_url ?? u.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250';
+  return {
+    ...u,
+    is_active: active,
+    isActive: active,
+    commission_percentage: commission,
+    commissionPercentage: commission,
+    avatar_url: avatar,
+    avatarUrl: avatar
+  };
+}
+
+export function normalizeClient(c) {
+  if (!c) return c;
+  const visits = c.total_visits ?? c.totalVisits ?? 0;
+  const spent = c.total_spent_cents ?? c.totalSpentCents ?? 0;
+  return {
+    ...c,
+    total_visits: visits,
+    totalVisits: visits,
+    total_spent_cents: spent,
+    totalSpentCents: spent
+  };
+}
+
 function loadSavedState() {
   let loaded = { ...INITIAL_DATA };
   try {
@@ -130,13 +175,24 @@ function loadSavedState() {
     console.error('Failed to load state from localStorage', e);
   }
 
+  // Normalizar coleções carregadas do storage para garantir interoperabilidade camelCase e snake_case
+  if (Array.isArray(loaded.services)) {
+    loaded.services = loaded.services.map(normalizeService);
+  }
+  if (Array.isArray(loaded.users)) {
+    loaded.users = loaded.users.map(normalizeUser);
+  }
+  if (Array.isArray(loaded.clients)) {
+    loaded.clients = loaded.clients.map(normalizeClient);
+  }
+
   // Verificar se há sessão autenticada ativa no localStorage
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const savedUserRaw = localStorage.getItem(AUTH_USER_KEY);
   let savedUser = null;
   if (savedUserRaw) {
     try {
-      savedUser = JSON.parse(savedUserRaw);
+      savedUser = normalizeUser(JSON.parse(savedUserRaw));
     } catch (e) {}
   }
 
@@ -316,17 +372,17 @@ export async function syncFromBackend() {
     ]);
 
     if (staffList && staffList.length > 0) {
-      state.users = staffList;
-      const current = staffList.find(u => u.id === state.currentUser?.id) || staffList[0];
+      state.users = staffList.map(normalizeUser);
+      const current = state.users.find(u => u.id === state.currentUser?.id) || state.users[0];
       if (current) state.currentUser = current;
     }
 
     if (servicesList && servicesList.length > 0) {
-      state.services = servicesList;
+      state.services = servicesList.map(normalizeService);
     }
 
     if (clientsList && clientsList.length > 0) {
-      state.clients = clientsList;
+      state.clients = clientsList.map(normalizeClient);
     }
 
     saveState();
