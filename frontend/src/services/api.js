@@ -107,7 +107,23 @@ export const api = {
     list: () => request('/staff'),
     create: (data) => request('/staff', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => request(`/staff/${id}`, { method: 'DELETE' })
+    delete: (id) => request(`/staff/${id}`, { method: 'DELETE' }),
+    uploadAvatar: async (id, file, callerId, callerRole = 'BARBER') => {
+      const formData = new FormData();
+      formData.append('file', file);
+      let query = '';
+      if (callerId) query += `?callerId=${callerId}&callerRole=${callerRole}`;
+      const url = `${V1}/staff/${id}/avatar${query}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erro ${response.status} ao enviar foto`);
+      }
+      return await response.json();
+    }
   },
 
   // Serviços

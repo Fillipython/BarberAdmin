@@ -7,6 +7,12 @@ spring:
   application:
     name: barberadmin-api
   
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 5MB
+  
   datasource:
     url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:barberadmin_db}?sslmode=disable
     username: ${DB_USER:barberadmin}
@@ -36,6 +42,10 @@ spring:
     date-format: yyyy-MM-dd'T'HH:mm:ssXXX
     serialization:
       write-dates-as-timestamps: false
+
+# Armazenamento de Arquivos e Uploads (Não sobrecarrega o banco de dados)
+storage:
+  location: ${UPLOAD_DIR:uploads}
 
 # Documentação OpenAPI / Swagger UI
 springdoc:

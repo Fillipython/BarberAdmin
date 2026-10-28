@@ -6,9 +6,12 @@ import br.com.barberadmin.dto.staff.StaffDTO;
 import br.com.barberadmin.exception.BusinessException;
 import br.com.barberadmin.exception.ResourceNotFoundException;
 import br.com.barberadmin.repository.UserRepository;
+import br.com.barberadmin.service.storage.StorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -17,9 +20,11 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StaffService {
 
     private final UserRepository userRepository;
+    private final StorageService storageService;
 
     @Transactional(readOnly = true)
     public List<StaffDTO> findAll() {
@@ -70,8 +75,43 @@ public class StaffService {
         if (dto.getIsActive() != null) {
             user.setIsActive(dto.getIsActive());
         }
+        if (dto.getAvatarUrl() != null) {
+            user.setAvatarUrl(dto.getAvatarUrl());
+        }
+        if (dto.getBio() != null) {
+            user.setBio(dto.getBio());
+        }
 
         return toDTO(userRepository.save(user));
+    }
+
+    /**
+     * Upload de foto de perfil.
+     * Regra de atomicidade e permissão:
+     * - O Master pode atualizar a foto de qualquer barbeiro.
+     * - Cada barbeiro comum só pode atualizar a sua própria foto.
+     */
+    @Transactional
+    public StaffDTO updateAvatar(UUID targetBarberId, MultipartFile file, UUID callerId, UserRole callerRole) {
+        if (callerRole != UserRole.MASTER && (callerId == null || !callerId.equals(targetBarberId))) {
+            throw new BusinessException("Acesso negado: Cada profissional só pode alterar a sua própria foto de perfil.");
+        }
+
+        User user = userRepository.findById(targetBarberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profissional não encontrado"));
+
+        // Remove foto antiga do disco caso estivesse salva em uploads locais
+        if (user.getAvatarUrl() != null && user.getAvatarUrl().contains("/uploads/")) {
+            storageService.delete(user.getAvatarUrl());
+        }
+
+        // Armazena novo arquivo no disco (não incha o banco de dados)
+        String newAvatarUrl = storageService.store(file, "avatars");
+        user.setAvatarUrl(newAvatarUrl);
+
+        User saved = userRepository.save(user);
+        log.info("Foto de perfil atualizada para o usuário {}: {}", saved.getName(), newAvatarUrl);
+        return toDTO(saved);
     }
 
     @Transactional

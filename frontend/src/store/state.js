@@ -135,11 +135,33 @@ export function normalizeService(s) {
   };
 }
 
+export function formatAvatarUrl(url) {
+  if (!url) {
+    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250';
+  }
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  let base = 'http://localhost:8080';
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    if (host.includes('fillipython.ddns.net') || window.location.pathname.startsWith('/BarberAdmin')) {
+      base = `${protocol}//${window.location.host}/BarberAdmin`;
+    }
+  }
+  if (url.startsWith('/api/')) {
+    return `${base}${url}`;
+  }
+  return `${base}/api${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 export function normalizeUser(u) {
   if (!u) return u;
   const active = (u.is_active ?? u.isActive) !== false;
   const commission = Number(u.commission_percentage ?? u.commissionPercentage) || 100;
-  const avatar = u.avatar_url ?? u.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250';
+  const rawAvatar = u.avatar_url ?? u.avatarUrl;
+  const avatar = formatAvatarUrl(rawAvatar);
   return {
     ...u,
     is_active: active,
@@ -147,7 +169,8 @@ export function normalizeUser(u) {
     commission_percentage: commission,
     commissionPercentage: commission,
     avatar_url: avatar,
-    avatarUrl: avatar
+    avatarUrl: avatar,
+    raw_avatar_url: rawAvatar
   };
 }
 
@@ -400,4 +423,31 @@ export function formatCurrency(cents) {
     style: 'currency',
     currency: 'BRL'
   }).format((cents || 0) / 100);
+}
+
+// Upload de foto do profissional (respeita a regra de cada um editar sua própria foto)
+export async function uploadBarberAvatar(barberId, file) {
+  const caller = state.currentUser;
+  const callerId = caller ? caller.id : barberId;
+  const callerRole = caller ? caller.role : 'BARBER';
+
+  const updatedStaff = await api.staff.uploadAvatar(barberId, file, callerId, callerRole);
+  const normalized = normalizeUser(updatedStaff);
+
+  // Atualiza lista em memória
+  const idx = state.users.findIndex(u => u.id === barberId);
+  if (idx !== -1) {
+    state.users[idx] = { ...state.users[idx], ...normalized };
+  }
+
+  // Se for o próprio usuário atualmente selecionado, sincroniza
+  if (state.currentUser && state.currentUser.id === barberId) {
+    state.currentUser = { ...state.currentUser, ...normalized };
+    try {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.currentUser));
+    } catch (e) {}
+  }
+
+  saveState();
+  return normalized;
 }

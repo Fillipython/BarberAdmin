@@ -9,6 +9,25 @@
         </div>
 
         <div class="user-actions">
+          <!-- AVATAR DO PROFISSIONAL LOGADO (EDITÁVEL PELO PRÓPRIO) -->
+          <div class="user-avatar-wrapper" title="Alterar minha foto de perfil">
+            <img :src="state.currentUser.avatar_url" :alt="state.currentUser.name" class="topbar-avatar" />
+            <label class="avatar-upload-overlay" :class="{ 'is-uploading': uploadingAvatar }">
+              <input 
+                type="file" 
+                accept="image/png,image/jpeg,image/webp" 
+                @change="handleAvatarFileChange" 
+                style="display:none;" 
+                :disabled="uploadingAvatar"
+              />
+              <svg v-if="!uploadingAvatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="cam-icon">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <span v-else class="cam-spinner">⏳</span>
+            </label>
+          </div>
+
           <div class="profile-switch">
             <select 
               :value="state.currentUser.id" 
@@ -91,11 +110,13 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { state, isMaster, switchUser, logout } from './store/state.js';
+import { state, isMaster, switchUser, logout, uploadBarberAvatar } from './store/state.js';
 
 const route = useRoute();
 const router = useRouter();
+const uploadingAvatar = ref(false);
 
 function handleUserSwitch(userId) {
   switchUser(userId);
@@ -104,6 +125,28 @@ function handleUserSwitch(userId) {
 function handleLogout() {
   logout();
   router.push({ name: 'login' });
+}
+
+async function handleAvatarFileChange(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // Validação de tamanho no cliente (máx 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('A imagem deve ter no máximo 5MB.');
+    e.target.value = '';
+    return;
+  }
+
+  try {
+    uploadingAvatar.value = true;
+    await uploadBarberAvatar(state.currentUser.id, file);
+  } catch (err) {
+    alert('Falha ao enviar foto: ' + (err.message || 'Erro desconhecido'));
+  } finally {
+    uploadingAvatar.value = false;
+    e.target.value = '';
+  }
 }
 </script>
 
@@ -119,6 +162,59 @@ function handleLogout() {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+/* User Avatar Wrapper with Camera Overlay */
+.user-avatar-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid var(--accent-gold);
+  background: #1e293b;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.topbar-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.user-avatar-wrapper:hover .avatar-upload-overlay,
+.avatar-upload-overlay.is-uploading {
+  opacity: 1;
+}
+
+.cam-icon {
+  width: 15px;
+  height: 15px;
+  color: #fbbf24;
+}
+
+.cam-spinner {
+  font-size: 0.75rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .logout-btn {

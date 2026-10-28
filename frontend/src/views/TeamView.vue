@@ -12,13 +12,8 @@
     </div>
 
     <!-- Restrict Warning -->
-    <div v-if="!isMaster" class="clean-panel access-denied-panel">
-      <h3>Acesso Restrito ao Barbeiro Master</h3>
-      <p>Apenas o administrador master pode cadastrar, alterar comissões ou remover membros da barbearia.</p>
-    </div>
-
     <!-- Barbers List -->
-    <div v-else class="team-grid">
+    <div class="team-grid">
       <div 
         v-for="barber in state.users" 
         :key="barber.id" 
@@ -26,6 +21,27 @@
         :class="{ 'master-card': barber.role === 'MASTER' }"
       >
         <div class="barber-head">
+          <!-- AVATAR COM OVERLAY DE UPLOAD -->
+          <div class="barber-avatar-box">
+            <img :src="barber.avatar_url" :alt="barber.name" class="barber-img" />
+            <label 
+              v-if="canEditAvatar(barber)" 
+              class="card-avatar-edit" 
+              title="Alterar foto de perfil"
+            >
+              <input 
+                type="file" 
+                accept="image/png,image/jpeg,image/webp" 
+                @change="(e) => handleCardAvatarUpload(barber.id, e)" 
+                style="display:none;" 
+              />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="cam-icon-sm">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </label>
+          </div>
+
           <div class="barber-info">
             <h3 class="barber-name">{{ barber.name }}</h3>
             <span class="barber-nick">{{ barber.nickname }}</span>
@@ -118,7 +134,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { state, isMaster, addBarber, removeBarber } from '../store/state.js';
+import { state, isMaster, addBarber, removeBarber, uploadBarberAvatar } from '../store/state.js';
 
 const showModal = ref(false);
 
@@ -130,6 +146,30 @@ const form = ref({
   password: '',
   commission_percentage: 50
 });
+
+function canEditAvatar(barber) {
+  // Master pode trocar de qualquer um; cada barbeiro pode trocar a sua própria
+  return isMaster.value || (state.currentUser && state.currentUser.id === barber.id);
+}
+
+async function handleCardAvatarUpload(barberId, event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert('A foto deve ter no máximo 5MB.');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    await uploadBarberAvatar(barberId, file);
+  } catch (err) {
+    alert('Erro ao enviar foto: ' + (err.message || 'Falha no envio'));
+  } finally {
+    event.target.value = '';
+  }
+}
 
 function handleSaveBarber() {
   addBarber({
@@ -183,11 +223,6 @@ function handleRemoveBarber(barber) {
   font-size: 0.8rem;
 }
 
-.access-denied-panel {
-  padding: 1.5rem;
-  border-left: 3px solid var(--accent-rose);
-}
-
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -207,13 +242,61 @@ function handleRemoveBarber(barber) {
 
 .barber-head {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.barber-avatar-box {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid var(--border-subtle);
+  background: #18202f;
+  flex-shrink: 0;
+}
+
+.barber-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-avatar-edit {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.barber-avatar-box:hover .card-avatar-edit {
+  opacity: 1;
+}
+
+.cam-icon-sm {
+  width: 18px;
+  height: 18px;
+  color: #fbbf24;
+}
+
+.barber-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .barber-name {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .barber-nick {

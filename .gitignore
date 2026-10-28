@@ -6,6 +6,7 @@
 # Docker data volumes
 pgdata/
 data/
+uploads/
 
 # OS and IDE files
 .DS_Store

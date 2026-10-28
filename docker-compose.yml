@@ -43,9 +43,12 @@ services:
       - DB_USER=${DB_USER:-barberadmin}
       - DB_PASSWORD=${DB_PASSWORD:-barberadmin_secret_2026}
       - BACKEND_PORT=8080
+      - UPLOAD_DIR=/app/uploads
       - BARBERNOTIFY_API_KEY=${BARBERNOTIFY_API_KEY:-barbernotify_secret_token_2026}
       - BARBERNOTIFY_WEBHOOK_SECRET=${BARBERNOTIFY_WEBHOOK_SECRET:-barbernotify_webhook_secret_2026}
       - TZ=${APP_TIMEZONE:-America/Sao_Paulo}
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
