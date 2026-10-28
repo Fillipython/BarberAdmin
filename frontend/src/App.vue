@@ -9,24 +9,21 @@
         </div>
 
         <div class="user-actions">
-          <!-- AVATAR DO PROFISSIONAL LOGADO (EDITÁVEL PELO PRÓPRIO) -->
-          <div class="user-avatar-wrapper" title="Alterar minha foto de perfil">
+          <!-- AVATAR CLICÁVEL DO PROFISSIONAL LOGADO COM BADGE VISÍVEL DE CÂMERA -->
+          <button 
+            type="button" 
+            class="user-avatar-btn" 
+            @click="showProfileModal = true" 
+            title="Clique para alterar ou remover sua foto de perfil"
+          >
             <img :src="state.currentUser.avatar_url" :alt="state.currentUser.name" class="topbar-avatar" />
-            <label class="avatar-upload-overlay" :class="{ 'is-uploading': uploadingAvatar }">
-              <input 
-                type="file" 
-                accept="image/png,image/jpeg,image/webp" 
-                @change="handleAvatarFileChange" 
-                style="display:none;" 
-                :disabled="uploadingAvatar"
-              />
-              <svg v-if="!uploadingAvatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="cam-icon">
+            <span class="cam-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="cam-badge-svg">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                 <circle cx="12" cy="13" r="4"/>
               </svg>
-              <span v-else class="cam-spinner">⏳</span>
-            </label>
-          </div>
+            </span>
+          </button>
 
           <div class="profile-switch">
             <select 
@@ -93,7 +90,8 @@
           <span class="nav-caption">Serviços</span>
         </router-link>
 
-        <router-link v-if="isMaster" to="/team" class="nav-btn" active-class="active" title="Equipe">
+        <!-- ABA EQUIPE DISPONÍVEL PARA TODOS OS PROFISSIONAIS -->
+        <router-link to="/team" class="nav-btn" active-class="active" title="Equipe">
           <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2l3 7h7l-5.5 4.5 2 7.5-6.5-5-6.5 5 2-7.5-5.5-4.5h7z"/>
           </svg>
@@ -101,6 +99,76 @@
         </router-link>
       </nav>
     </header>
+
+    <!-- MODAL DEDICADO DE GESTÃO DE FOTO DE PERFIL -->
+    <div v-if="showProfileModal" class="modal-backdrop" @click.self="showProfileModal = false">
+      <div class="modal-content profile-photo-modal">
+        <div class="modal-header">
+          <h2 class="modal-title">Minha Foto de Perfil</h2>
+          <button class="btn-icon btn-secondary" @click="showProfileModal = false">✕</button>
+        </div>
+
+        <div class="modal-body profile-modal-body">
+          <div class="large-avatar-preview">
+            <img :src="state.currentUser.avatar_url" :alt="state.currentUser.name" class="large-avatar-img" />
+            <div v-if="uploadingAvatar" class="avatar-loading-overlay">
+              <span class="loading-spinner">⏳</span>
+              <span>Processando...</span>
+            </div>
+          </div>
+
+          <div class="profile-info-text">
+            <h3 class="profile-name">{{ state.currentUser.name }}</h3>
+            <span class="profile-nick">{{ state.currentUser.nickname }}</span>
+            <span class="badge" :class="state.currentUser.role === 'MASTER' ? 'badge-gold' : 'badge-blue'">
+              {{ state.currentUser.role === 'MASTER' ? 'Master' : 'Barbeiro' }}
+            </span>
+          </div>
+
+          <div class="photo-actions-grid">
+            <label class="btn btn-primary btn-upload-photo" :class="{ 'btn-disabled': uploadingAvatar }">
+              <input 
+                type="file" 
+                accept="image/png,image/jpeg,image/webp" 
+                @change="handleAvatarFileChange" 
+                style="display:none;" 
+                :disabled="uploadingAvatar"
+              />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-btn-svg">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span>{{ uploadingAvatar ? 'Enviando foto...' : 'Escolher Nova Foto' }}</span>
+            </label>
+
+            <button 
+              type="button" 
+              class="btn btn-danger btn-remove-photo" 
+              @click="handleRemoveAvatar"
+              :disabled="uploadingAvatar"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-btn-svg">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              <span>Remover Foto</span>
+            </button>
+          </div>
+
+          <p class="photo-hint">
+            Formatos suportados: <strong>JPG, PNG ou WebP</strong> (máximo 5MB).<br>
+            A foto é salva em disco no servidor com link otimizado, sem inchar o banco.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary full-width" @click="showProfileModal = false">
+            Concluir
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- CONTENT -->
     <main class="app-main">
@@ -112,10 +180,11 @@
 <script setup>
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { state, isMaster, switchUser, logout, uploadBarberAvatar } from './store/state.js';
+import { state, isMaster, switchUser, logout, uploadBarberAvatar, removeBarberAvatar } from './store/state.js';
 
 const route = useRoute();
 const router = useRouter();
+const showProfileModal = ref(false);
 const uploadingAvatar = ref(false);
 
 function handleUserSwitch(userId) {
@@ -141,11 +210,26 @@ async function handleAvatarFileChange(e) {
   try {
     uploadingAvatar.value = true;
     await uploadBarberAvatar(state.currentUser.id, file);
+    alert('Foto atualizada com sucesso!');
   } catch (err) {
     alert('Falha ao enviar foto: ' + (err.message || 'Erro desconhecido'));
   } finally {
     uploadingAvatar.value = false;
     e.target.value = '';
+  }
+}
+
+async function handleRemoveAvatar() {
+  if (confirm('Deseja remover a foto personalizada e voltar ao avatar padrão?')) {
+    try {
+      uploadingAvatar.value = true;
+      await removeBarberAvatar(state.currentUser.id);
+      alert('Foto removida com sucesso!');
+    } catch (err) {
+      alert('Falha ao remover foto: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      uploadingAvatar.value = false;
+    }
   }
 }
 </script>
@@ -164,52 +248,164 @@ async function handleAvatarFileChange(e) {
   gap: 0.6rem;
 }
 
-/* User Avatar Wrapper with Camera Overlay */
-.user-avatar-wrapper {
+/* User Avatar Button with Visible Camera Badge */
+.user-avatar-btn {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  overflow: hidden;
+  padding: 0;
   border: 1.5px solid var(--accent-gold);
   background: #1e293b;
-  flex-shrink: 0;
   cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.user-avatar-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
 }
 
 .topbar-avatar {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   object-fit: cover;
   display: block;
 }
 
-.avatar-upload-overlay {
+.cam-badge {
   position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  bottom: -2px;
+  right: -2px;
+  background: #d97706;
+  border: 1.5px solid #0b0e14;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  cursor: pointer;
+  color: #ffffff;
 }
 
-.user-avatar-wrapper:hover .avatar-upload-overlay,
-.avatar-upload-overlay.is-uploading {
-  opacity: 1;
+.cam-badge-svg {
+  width: 9px;
+  height: 9px;
 }
 
-.cam-icon {
-  width: 15px;
-  height: 15px;
+/* Modal Profile Styling */
+.profile-photo-modal {
+  max-width: 380px;
+}
+
+.profile-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+  gap: 1rem;
+}
+
+.large-avatar-preview {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-gold);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+  overflow: hidden;
+  background: #18202f;
+}
+
+.large-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   color: #fbbf24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-.cam-spinner {
-  font-size: 0.75rem;
+.loading-spinner {
+  font-size: 1.25rem;
   animation: spin 1s linear infinite;
+}
+
+.profile-info-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.profile-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-nick {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.photo-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.btn-upload-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-remove-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 0.825rem;
+}
+
+.action-btn-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.photo-hint {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  line-height: 1.35;
 }
 
 @keyframes spin {

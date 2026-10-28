@@ -451,3 +451,28 @@ export async function uploadBarberAvatar(barberId, file) {
   saveState();
   return normalized;
 }
+
+// Remove a foto do profissional e restaura o avatar padrão
+export async function removeBarberAvatar(barberId) {
+  const caller = state.currentUser;
+  const callerId = caller ? caller.id : barberId;
+  const callerRole = caller ? caller.role : 'BARBER';
+
+  const updatedStaff = await api.staff.removeAvatar(barberId, callerId, callerRole);
+  const normalized = normalizeUser(updatedStaff);
+
+  const idx = state.users.findIndex(u => u.id === barberId);
+  if (idx !== -1) {
+    state.users[idx] = { ...state.users[idx], ...normalized };
+  }
+
+  if (state.currentUser && state.currentUser.id === barberId) {
+    state.currentUser = { ...state.currentUser, ...normalized };
+    try {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.currentUser));
+    } catch (e) {}
+  }
+
+  saveState();
+  return normalized;
+}

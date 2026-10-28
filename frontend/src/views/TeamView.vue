@@ -66,9 +66,93 @@
           </div>
         </div>
 
-        <div v-if="isMaster && barber.role !== 'MASTER'" class="card-footer">
-          <button class="btn btn-danger btn-sm full-width" @click="handleRemoveBarber(barber)">
+        <div class="card-footer">
+          <!-- BOTÃO CLARO E VISÍVEL PARA ALTERAR OU REMOVER FOTO -->
+          <button 
+            v-if="canEditAvatar(barber)" 
+            type="button" 
+            class="btn btn-secondary btn-sm full-width btn-card-avatar" 
+            @click="openBarberPhotoModal(barber)"
+          >
+            📷 Alterar / Remover Foto
+          </button>
+
+          <button 
+            v-if="isMaster && barber.role !== 'MASTER'" 
+            class="btn btn-danger btn-sm full-width" 
+            @click="handleRemoveBarber(barber)"
+          >
             Remover Barbeiro
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DEDICADO DE GESTÃO DE FOTO DO PROFISSIONAL -->
+    <div v-if="selectedBarberForPhoto" class="modal-backdrop" @click.self="selectedBarberForPhoto = null">
+      <div class="modal-content profile-photo-modal">
+        <div class="modal-header">
+          <h2 class="modal-title">Foto de Perfil</h2>
+          <button class="btn-icon btn-secondary" @click="selectedBarberForPhoto = null">✕</button>
+        </div>
+
+        <div class="modal-body profile-modal-body">
+          <div class="large-avatar-preview">
+            <img :src="selectedBarberForPhoto.avatar_url" :alt="selectedBarberForPhoto.name" class="large-avatar-img" />
+            <div v-if="uploadingAvatar" class="avatar-loading-overlay">
+              <span class="loading-spinner">⏳</span>
+              <span>Processando...</span>
+            </div>
+          </div>
+
+          <div class="profile-info-text">
+            <h3 class="profile-name">{{ selectedBarberForPhoto.name }}</h3>
+            <span class="profile-nick">{{ selectedBarberForPhoto.nickname }}</span>
+            <span class="badge" :class="selectedBarberForPhoto.role === 'MASTER' ? 'badge-gold' : 'badge-blue'">
+              {{ selectedBarberForPhoto.role === 'MASTER' ? 'Master' : 'Barbeiro' }}
+            </span>
+          </div>
+
+          <div class="photo-actions-grid">
+            <label class="btn btn-primary btn-upload-photo" :class="{ 'btn-disabled': uploadingAvatar }">
+              <input 
+                type="file" 
+                accept="image/png,image/jpeg,image/webp" 
+                @change="handleModalAvatarUpload" 
+                style="display:none;" 
+                :disabled="uploadingAvatar"
+              />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-btn-svg">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span>{{ uploadingAvatar ? 'Enviando...' : 'Escolher Nova Foto' }}</span>
+            </label>
+
+            <button 
+              type="button" 
+              class="btn btn-danger btn-remove-photo" 
+              @click="handleModalRemoveAvatar"
+              :disabled="uploadingAvatar"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="action-btn-svg">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              <span>Remover Foto</span>
+            </button>
+          </div>
+
+          <p class="photo-hint">
+            Formatos suportados: <strong>JPG, PNG ou WebP</strong> (máximo 5MB).<br>
+            A foto é salva em disco no servidor com link otimizado, sem inchar o banco.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary full-width" @click="selectedBarberForPhoto = null">
+            Concluir
           </button>
         </div>
       </div>
@@ -134,9 +218,11 @@
 
 <script setup>
 import { ref } from 'vue';
-import { state, isMaster, addBarber, removeBarber, uploadBarberAvatar } from '../store/state.js';
+import { state, isMaster, addBarber, removeBarber, uploadBarberAvatar, removeBarberAvatar } from '../store/state.js';
 
 const showModal = ref(false);
+const selectedBarberForPhoto = ref(null);
+const uploadingAvatar = ref(false);
 
 const form = ref({
   name: '',
@@ -152,6 +238,50 @@ function canEditAvatar(barber) {
   return isMaster.value || (state.currentUser && state.currentUser.id === barber.id);
 }
 
+function openBarberPhotoModal(barber) {
+  selectedBarberForPhoto.value = barber;
+}
+
+async function handleModalAvatarUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file || !selectedBarberForPhoto.value) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert('A foto deve ter no máximo 5MB.');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    uploadingAvatar.value = true;
+    const updated = await uploadBarberAvatar(selectedBarberForPhoto.value.id, file);
+    selectedBarberForPhoto.value = updated;
+    alert('Foto do profissional atualizada com sucesso!');
+  } catch (err) {
+    alert('Erro ao enviar foto: ' + (err.message || 'Falha no envio'));
+  } finally {
+    uploadingAvatar.value = false;
+    event.target.value = '';
+  }
+}
+
+async function handleModalRemoveAvatar() {
+  if (!selectedBarberForPhoto.value) return;
+
+  if (confirm(`Deseja remover a foto de ${selectedBarberForPhoto.value.name} e restaurar o avatar padrão?`)) {
+    try {
+      uploadingAvatar.value = true;
+      const updated = await removeBarberAvatar(selectedBarberForPhoto.value.id);
+      selectedBarberForPhoto.value = updated;
+      alert('Foto removida com sucesso!');
+    } catch (err) {
+      alert('Erro ao remover foto: ' + (err.message || 'Falha na remoção'));
+    } finally {
+      uploadingAvatar.value = false;
+    }
+  }
+}
+
 async function handleCardAvatarUpload(barberId, event) {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -164,6 +294,7 @@ async function handleCardAvatarUpload(barberId, event) {
 
   try {
     await uploadBarberAvatar(barberId, file);
+    alert('Foto atualizada!');
   } catch (err) {
     alert('Erro ao enviar foto: ' + (err.message || 'Falha no envio'));
   } finally {
@@ -335,10 +466,144 @@ function handleRemoveBarber(barber) {
 
 .card-footer {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.btn-card-avatar {
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: #fbbf24;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-card-avatar:hover {
+  background: rgba(251, 191, 36, 0.16);
+  border-color: #fbbf24;
 }
 
 .full-width {
   width: 100%;
+}
+
+/* Modal Profile Styling */
+.profile-photo-modal {
+  max-width: 380px;
+}
+
+.profile-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+  gap: 1rem;
+}
+
+.large-avatar-preview {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-gold);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+  overflow: hidden;
+  background: #18202f;
+}
+
+.large-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fbbf24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.loading-spinner {
+  font-size: 1.25rem;
+  animation: spin 1s linear infinite;
+}
+
+.profile-info-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.profile-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-nick {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.photo-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.btn-upload-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-remove-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 0.825rem;
+}
+
+.action-btn-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.photo-hint {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  line-height: 1.35;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .modal-header {

@@ -123,6 +123,11 @@ export const api = {
         throw new Error(errorData.message || `Erro ${response.status} ao enviar foto`);
       }
       return await response.json();
+    },
+    removeAvatar: async (id, callerId, callerRole = 'BARBER') => {
+      let query = '';
+      if (callerId) query += `?callerId=${callerId}&callerRole=${callerRole}`;
+      return request(`/staff/${id}/avatar${query}`, { method: 'DELETE' });
     }
   },
 

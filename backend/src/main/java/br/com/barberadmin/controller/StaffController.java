@@ -56,6 +56,16 @@ public class StaffController {
         return ResponseEntity.ok(updated);
     }
 
+    @Operation(summary = "Remover foto do perfil do profissional (volta ao avatar padrão)")
+    @DeleteMapping("/{id}/avatar")
+    public ResponseEntity<StaffDTO> removeAvatar(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID callerId,
+            @RequestParam(required = false, defaultValue = "BARBER") UserRole callerRole) {
+        StaffDTO updated = staffService.removeAvatar(id, callerId, callerRole);
+        return ResponseEntity.ok(updated);
+    }
+
     @Operation(summary = "Remover barbeiro (Soft Delete)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStaff(@PathVariable UUID id) {

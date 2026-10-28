@@ -114,6 +114,28 @@ public class StaffService {
         return toDTO(saved);
     }
 
+    /**
+     * Remove a foto de perfil personalizada e retorna ao avatar padrão.
+     */
+    @Transactional
+    public StaffDTO removeAvatar(UUID targetBarberId, UUID callerId, UserRole callerRole) {
+        if (callerRole != UserRole.MASTER && (callerId == null || !callerId.equals(targetBarberId))) {
+            throw new BusinessException("Acesso negado: Cada profissional só pode alterar a sua própria foto de perfil.");
+        }
+
+        User user = userRepository.findById(targetBarberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profissional não encontrado"));
+
+        if (user.getAvatarUrl() != null && user.getAvatarUrl().contains("/uploads/")) {
+            storageService.delete(user.getAvatarUrl());
+        }
+
+        user.setAvatarUrl(null);
+        User saved = userRepository.save(user);
+        log.info("Foto de perfil removida para o usuário {}", saved.getName());
+        return toDTO(saved);
+    }
+
     @Transactional
     public void delete(UUID id) {
         User user = userRepository.findById(id)
