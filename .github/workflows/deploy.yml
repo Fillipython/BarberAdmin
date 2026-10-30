@@ -41,15 +41,13 @@ jobs:
             git reset --hard origin/main
             mkdir -p uploads/avatars
             chmod -R 777 uploads 2>/dev/null || sudo chmod -R 777 uploads 2>/dev/null || true
-            $DOCKER_CMD up -d --build backend frontend
+            $DOCKER_CMD up -d --build postgres backend frontend
 
-            for NET in barbernotify_barber_man_network barberadmin_barber_admin_network; do
-              $DOCKER_CLI network connect "$NET" barber_admin_postgres 2>/dev/null || true
-              $DOCKER_CLI network connect "$NET" barber_admin_backend 2>/dev/null || true
-              $DOCKER_CLI network connect "$NET" barber_admin_frontend 2>/dev/null || true
-              $DOCKER_CLI network connect "$NET" barber_man_frontend 2>/dev/null || true
-              $DOCKER_CLI network connect "$NET" barber_man_backend 2>/dev/null || true
-            done
+            $DOCKER_CLI network disconnect barberadmin_barber_admin_network barber_man_frontend 2>/dev/null || true
+            $DOCKER_CLI network disconnect barberadmin_barber_admin_network barber_man_backend 2>/dev/null || true
+
+            $DOCKER_CLI network connect barbernotify_barber_man_network barber_admin_backend 2>/dev/null || true
+            $DOCKER_CLI network connect barbernotify_barber_man_network barber_admin_frontend 2>/dev/null || true
 
             $DOCKER_CLI exec barber_man_frontend nginx -s reload 2>/dev/null || $DOCKER_CLI restart barber_man_frontend
             echo "Deploy do BarberAdmin concluído com sucesso!"
