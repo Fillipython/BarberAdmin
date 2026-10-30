@@ -1,0 +1,48 @@
+name: Deploy Automático - BarberAdmin
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Deploy BarberAdmin na VPS Oracle
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SSH_HOST != '' }}
+    steps:
+      - name: Executar Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 15m
+          script: |
+            echo "Iniciando deploy automático do BarberAdmin..."
+            if [ -d "$HOME/BarberAdmin" ]; then
+              cd "$HOME/BarberAdmin"
+            elif [ -d "/home/ubuntu/BarberAdmin" ]; then
+              cd "/home/ubuntu/BarberAdmin"
+            elif [ -d "/home/opc/BarberAdmin" ]; then
+              cd "/home/opc/BarberAdmin"
+            elif [ -d "/var/www/BarberAdmin" ]; then
+              cd "/var/www/BarberAdmin"
+            else
+              cd "$(find /home /var/www /root -maxdepth 3 -name BarberAdmin 2>/dev/null | head -n 1)"
+            fi
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            DOCKER_CMD="docker compose"
+            if ! docker ps >/dev/null 2>&1; then
+              if sudo docker ps >/dev/null 2>&1; then
+                DOCKER_CMD="sudo docker compose"
+              fi
+            fi
+
+            $DOCKER_CMD up -d --build backend frontend
+            echo "Deploy do BarberAdmin concluído com sucesso!"
+

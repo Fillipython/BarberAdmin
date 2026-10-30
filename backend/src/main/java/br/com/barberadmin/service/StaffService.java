@@ -13,9 +13,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +54,7 @@ public class StaffService {
                 .nickname(dto.getNickname())
                 .email(dto.getEmail().toLowerCase().trim())
                 .phone(cleanPhone)
-                .passwordHash("$2a$10$vDcq79ZJpD2bXyUu0tN7q.Zk9mQeH2eZ9t2eX9q.Zk9mQeH2eZ9t2") // Senha padrão inicial
+                .passwordHash("$2b$10$HE9vLiZI187bFCw7eMg7reU4TU5ss8VAkPskkbGQXkSjUVVyKRJH6") // Senha padrão inicial: admin123
                 .role(dto.getRole() != null ? dto.getRole() : UserRole.BARBER)
                 .commissionPercentage(dto.getCommissionPercentage())
                 .avatarUrl(dto.getAvatarUrl())
@@ -82,7 +88,9 @@ public class StaffService {
             user.setBio(dto.getBio());
         }
 
-        return toDTO(userRepository.save(user));
+        User saved = userRepository.save(user);
+        syncAvatarToBarberNotifyAsync(saved.getId(), saved.getAvatarUrl());
+        return toDTO(saved);
     }
 
     /**
@@ -111,11 +119,12 @@ public class StaffService {
 
         User saved = userRepository.save(user);
         log.info("Foto de perfil atualizada para o usuário {}: {}", saved.getName(), newAvatarUrl);
+        syncAvatarToBarberNotifyAsync(saved.getId(), newAvatarUrl);
         return toDTO(saved);
     }
 
     /**
-     * Remove a foto de perfil personalizada e retorna ao avatar padrão.
+     * Remove a foto de perfil personalizada e marca como REMOVED para exibir avatar neutro tanto no Admin quanto aos clientes no BarberNotify.
      */
     @Transactional
     public StaffDTO removeAvatar(UUID targetBarberId, UUID callerId, UserRole callerRole) {
@@ -130,10 +139,42 @@ public class StaffService {
             storageService.delete(user.getAvatarUrl());
         }
 
-        user.setAvatarUrl(null);
+        user.setAvatarUrl("REMOVED");
         User saved = userRepository.save(user);
         log.info("Foto de perfil removida para o usuário {}", saved.getName());
+        syncAvatarToBarberNotifyAsync(saved.getId(), "REMOVED");
         return toDTO(saved);
+    }
+
+    private void syncAvatarToBarberNotifyAsync(UUID barberId, String avatarUrl) {
+        if (barberId == null) return;
+        String safeUrl = avatarUrl != null ? avatarUrl.replace("\"", "\\\"") : "";
+        String payload = String.format("{\"avatarUrl\":\"%s\"}", safeUrl);
+
+        CompletableFuture.runAsync(() -> {
+            String[] notifyTargets = {
+                    "http://barber_man_backend:8081/api/barbers/" + barberId + "/avatar",
+                    "http://host.docker.internal:8081/api/barbers/" + barberId + "/avatar",
+                    "http://localhost:8081/api/barbers/" + barberId + "/avatar"
+            };
+            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
+            for (String target : notifyTargets) {
+                try {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(target))
+                            .timeout(Duration.ofSeconds(3))
+                            .header("Content-Type", "application/json")
+                            .method("PATCH", HttpRequest.BodyPublishers.ofString(payload))
+                            .build();
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                        log.info("Avatar sincronizado com sucesso no BarberNotify para barbeiro {}", barberId);
+                        break;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        });
     }
 
     @Transactional

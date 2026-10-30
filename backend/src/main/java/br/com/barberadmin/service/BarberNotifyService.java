@@ -2,7 +2,6 @@ package br.com.barberadmin.service;
 
 import br.com.barberadmin.domain.entity.*;
 import br.com.barberadmin.domain.enums.AppointmentStatus;
-import br.com.barberadmin.domain.enums.UserRole;
 import br.com.barberadmin.dto.barbernotify.BarberNotifyEventDTO;
 import br.com.barberadmin.dto.barbernotify.BarberNotifyResponseDTO;
 import br.com.barberadmin.repository.*;
@@ -59,6 +58,26 @@ public class BarberNotifyService {
         OffsetDateTime scheduledAt = event.getScheduledAt();
         OffsetDateTime endAt = scheduledAt.plusMinutes(duration);
 
+        // Idempotência: se o mesmo horário já foi sincronizado para este barbeiro, retorna o agendamento existente
+        List<Appointment> existingInSlot = appointmentRepository.findByBarberInTimeRange(
+                barber.getId(), scheduledAt.minusMinutes(1), scheduledAt.plusMinutes(1));
+        if (existingInSlot != null) {
+            Optional<Appointment> activeExisting = existingInSlot.stream()
+                    .filter(a -> a.getStatus() != AppointmentStatus.CANCELLED && a.getStatus() != AppointmentStatus.NO_SHOW)
+                    .findFirst();
+            if (activeExisting.isPresent()) {
+                Appointment found = activeExisting.get();
+                return BarberNotifyResponseDTO.builder()
+                        .success(true)
+                        .message("Agendamento já sincronizado com o BarberNotify")
+                        .appointmentId(found.getId())
+                        .clientId(client.getId())
+                        .barberId(barber.getId())
+                        .processedAt(OffsetDateTime.now())
+                        .build();
+            }
+        }
+
         // 5. Determina o preço (permite override vindo do BarberNotify ou usa o preço base do serviço)
         int priceCents = event.getCustomPriceCents() != null && event.getCustomPriceCents() >= 0
                 ? event.getCustomPriceCents()
@@ -106,7 +125,6 @@ public class BarberNotifyService {
         String cleanPhone = event.getClientPhone().replaceAll("[^0-9]", "");
         return clientRepository.findFirstByPhone(cleanPhone)
                 .map(existing -> {
-                    // Atualiza nome se necessário
                     if (event.getClientName() != null && !event.getClientName().isBlank()) {
                         existing.setName(event.getClientName());
                     }
@@ -186,7 +204,19 @@ public class BarberNotifyService {
 
     private BarberNotifyResponseDTO handleCancellation(BarberNotifyEventDTO event) {
         log.info("Processando cancelamento vindo do BarberNotify: cliente={}", event.getClientName());
-        // Se houver lógica de cancelamento por ID externo ou telefone
+        if (event.getScheduledAt() != null) {
+            OffsetDateTime start = event.getScheduledAt().minusMinutes(5);
+            OffsetDateTime end = event.getScheduledAt().plusMinutes(5);
+            List<Appointment> candidates = appointmentRepository.findAllInTimeRange(start, end);
+            if (candidates != null) {
+                for (Appointment a : candidates) {
+                    if (a.getStatus() == AppointmentStatus.CONFIRMED || a.getStatus() == AppointmentStatus.PENDING) {
+                        a.setStatus(AppointmentStatus.CANCELLED);
+                        appointmentRepository.save(a);
+                    }
+                }
+            }
+        }
         return BarberNotifyResponseDTO.builder()
                 .success(true)
                 .message("Cancelamento registrado com sucesso")

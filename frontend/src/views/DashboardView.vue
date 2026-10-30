@@ -36,159 +36,249 @@
       </div>
     </div>
 
-    <!-- HERO FINANCIAL STATEMENT (OPEN, NON-BOXED, FLUID) -->
-    <section class="balance-hero">
-      <span class="balance-title">
-        {{ isMaster 
-            ? (viewPeriod === 'day' ? 'Faturamento Diário' : 'Faturamento Mensal') 
-            : 'Sua Produção' }}
-      </span>
-
-      <div class="balance-amount">
-        {{ formatCurrency(currentMetrics.totalGross) }}
+    <!-- CARD DE PERFIL PÚBLICO DO BARBEIRO (INTEGRADO COM BARBERNOTIFY) -->
+    <section v-if="state.currentUser" class="barber-profile-banner">
+      <div class="profile-banner-left">
+        <div class="banner-avatar-wrap">
+          <img :src="state.currentUser.avatar_url" :alt="state.currentUser.name" class="banner-avatar-img" />
+          <span v-if="uploadingPhoto" class="banner-avatar-Wait">⏳</span>
+        </div>
+        <div class="banner-user-info">
+          <div class="banner-name-row">
+            <h2 class="banner-name">{{ state.currentUser.name }}</h2>
+            <span class="banner-role-badge" :class="isMaster ? 'role-master' : 'role-barber'">
+              {{ isMaster ? 'Master' : 'Barbeiro' }}
+            </span>
+          </div>
+          <p class="banner-sync-subtitle">
+            Sua foto é sincronizada automaticamente com a vitrine de clientes no <strong>BarberNotify</strong>.
+          </p>
+        </div>
       </div>
 
-      <!-- Inline stats with subtle dots -->
-      <div class="balance-substats">
-        <span>Líquido: <strong class="emerald-text">{{ formatCurrency(isMaster ? currentMetrics.shopNet : currentMetrics.barberCommission) }}</strong></span>
-        <span class="dot-sep">·</span>
-        <span v-if="isMaster">Comissões: <strong>{{ formatCurrency(currentMetrics.barberCommission) }}</strong></span>
-        <span v-if="isMaster" class="dot-sep">·</span>
-        <span>{{ currentMetrics.completedCount }} atendimentos</span>
-        <span class="dot-sep">·</span>
-        <span>Ticket Médio: {{ formatCurrency(currentMetrics.averageTicket) }}</span>
+      <div class="profile-banner-actions">
+        <label class="btn-photo-action btn-photo-upload" :class="{ disabled: uploadingPhoto }">
+          <input 
+            type="file" 
+            accept="image/png,image/jpeg,image/webp" 
+            @change="onSelectNewPhoto" 
+            style="display:none;" 
+            :disabled="uploadingPhoto"
+          />
+          <span>📷 {{ uploadingPhoto ? 'Enviando...' : 'Mudar Foto' }}</span>
+        </label>
+        <button 
+          type="button" 
+          class="btn-photo-action btn-photo-delete" 
+          @click="onDeleteCurrentPhoto"
+          :disabled="uploadingPhoto"
+        >
+          🗑️ Excluir Foto
+        </button>
       </div>
     </section>
 
-    <!-- COMPARISON SECTION (PIE / DONUT CHARTS) -->
-    <section class="analytics-section">
-      <h2 class="section-title">Comparativo de Receita</h2>
+    <!-- VISÃO FINANCEIRA COMPLETA (EXCLUSIVA PARA PERFIL MASTER) -->
+    <template v-if="isMaster">
+      <!-- HERO FINANCIAL STATEMENT (OPEN, NON-BOXED, FLUID) -->
+      <section class="balance-hero">
+        <span class="balance-title">
+          {{ viewPeriod === 'day' ? 'Faturamento Diário' : 'Faturamento Mensal' }}
+        </span>
 
-      <div v-if="currentMetrics.totalGross === 0" class="empty-analytics">
-        Sem movimentações financeiras para o período selecionado.
-      </div>
+        <div class="balance-amount">
+          {{ formatCurrency(currentMetrics.totalGross) }}
+        </div>
 
-      <div v-else class="donuts-grid">
-        <!-- Donut 1: Formas de Pagamento -->
-        <div class="donut-card">
-          <div class="donut-heading">
-            <h3>Por Forma de Pagamento</h3>
-            <span class="donut-desc">Distribuição da receita</span>
-          </div>
+        <!-- Inline stats with subtle dots -->
+        <div class="balance-substats">
+          <span>Líquido: <strong class="emerald-text">{{ formatCurrency(currentMetrics.shopNet) }}</strong></span>
+          <span class="dot-sep">·</span>
+          <span>Comissões: <strong>{{ formatCurrency(currentMetrics.barberCommission) }}</strong></span>
+          <span class="dot-sep">·</span>
+          <span>{{ currentMetrics.completedCount }} atendimentos concluídos</span>
+          <span class="dot-sep">·</span>
+          <span>Ticket Médio: {{ formatCurrency(currentMetrics.averageTicket) }}</span>
+        </div>
+      </section>
 
-          <div class="donut-body">
-            <div class="svg-container">
-              <svg viewBox="0 0 100 100" class="donut-svg">
-                <circle
-                  v-for="slice in paymentDonutSlices"
-                  :key="slice.key"
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="transparent"
-                  :stroke="slice.color"
-                  stroke-width="12"
-                  :stroke-dasharray="`${slice.dash} ${100 - slice.dash}`"
-                  :stroke-dashoffset="slice.offset"
-                />
-              </svg>
-              <div class="donut-center-info">
-                <span class="center-number">{{ currentMetrics.completedCount }}</span>
-                <span class="center-label">vendas</span>
-              </div>
+      <!-- COMPARISON SECTION (PIE / DONUT CHARTS) -->
+      <section class="analytics-section">
+        <h2 class="section-title">Comparativo de Receita</h2>
+
+        <div v-if="currentMetrics.totalGross === 0" class="empty-analytics">
+          Sem movimentações financeiras para o período selecionado.
+        </div>
+
+        <div v-else class="donuts-grid">
+          <!-- Donut 1: Formas de Pagamento -->
+          <div class="donut-card">
+            <div class="donut-heading">
+              <h3>Por Forma de Pagamento</h3>
+              <span class="donut-desc">Distribuição da receita</span>
             </div>
 
-            <div class="donut-legend">
-              <div 
-                v-for="item in paymentBreakdown" 
-                :key="item.label" 
-                class="legend-row"
-              >
-                <div class="legend-swatch" :style="{ backgroundColor: item.color }"></div>
-                <span class="legend-name">{{ item.label }}</span>
-                <span class="legend-value">{{ formatCurrency(item.value) }}</span>
-                <span class="legend-percent">{{ item.percent }}%</span>
+            <div class="donut-body">
+              <div class="svg-container">
+                <svg viewBox="0 0 100 100" class="donut-svg">
+                  <circle
+                    v-for="slice in paymentDonutSlices"
+                    :key="slice.key"
+                    cx="50"
+                    cy="50"
+                    r="36"
+                    fill="transparent"
+                    :stroke="slice.color"
+                    stroke-width="12"
+                    :stroke-dasharray="`${slice.dash} ${100 - slice.dash}`"
+                    :stroke-dashoffset="slice.offset"
+                  />
+                </svg>
+                <div class="donut-center-info">
+                  <span class="center-number">{{ currentMetrics.completedCount }}</span>
+                  <span class="center-label">vendas</span>
+                </div>
+              </div>
+
+              <div class="donut-legend">
+                <div 
+                  v-for="item in paymentBreakdown" 
+                  :key="item.label" 
+                  class="legend-row"
+                >
+                  <div class="legend-swatch" :style="{ backgroundColor: item.color }"></div>
+                  <span class="legend-name">{{ item.label }}</span>
+                  <span class="legend-value">{{ formatCurrency(item.value) }}</span>
+                  <span class="legend-percent">{{ item.percent }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Donut 2: Participação por Barbeiro (Master) -->
+          <div class="donut-card">
+            <div class="donut-heading">
+              <h3>Por Profissional</h3>
+              <span class="donut-desc">Participação de cada barbeiro</span>
+            </div>
+
+            <div class="donut-body">
+              <div class="svg-container">
+                <svg viewBox="0 0 100 100" class="donut-svg">
+                  <circle
+                    v-for="slice in secondaryDonutSlices"
+                    :key="slice.key"
+                    cx="50"
+                    cy="50"
+                    r="36"
+                    fill="transparent"
+                    :stroke="slice.color"
+                    stroke-width="12"
+                    :stroke-dasharray="`${slice.dash} ${100 - slice.dash}`"
+                    :stroke-dashoffset="slice.offset"
+                  />
+                </svg>
+                <div class="donut-center-info">
+                  <span class="center-number">{{ secondaryChartItems.length }}</span>
+                  <span class="center-label">equipe</span>
+                </div>
+              </div>
+
+              <div class="donut-legend">
+                <div 
+                  v-for="item in secondaryChartItems" 
+                  :key="item.label" 
+                  class="legend-row"
+                >
+                  <div class="legend-swatch" :style="{ backgroundColor: item.color }"></div>
+                  <span class="legend-name">{{ item.label }}</span>
+                  <span class="legend-value">{{ formatCurrency(item.value) }}</span>
+                  <span class="legend-percent">{{ item.percent }}%</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Donut 2: Participação por Barbeiro (Master) ou Lucro vs Comissão (Staff) -->
-        <div class="donut-card">
-          <div class="donut-heading">
-            <h3>{{ isMaster ? 'Por Profissional' : 'Divisão de Lucro' }}</h3>
-            <span class="donut-desc">{{ isMaster ? 'Participação de cada barbeiro' : 'Sua comissão vs Barbearia' }}</span>
-          </div>
+      <!-- RECENT ATENDIMENTOS TIMELINE (MASTER) -->
+      <section class="recent-section">
+        <h2 class="section-title">Atendimentos Concluídos</h2>
 
-          <div class="donut-body">
-            <div class="svg-container">
-              <svg viewBox="0 0 100 100" class="donut-svg">
-                <circle
-                  v-for="slice in secondaryDonutSlices"
-                  :key="slice.key"
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="transparent"
-                  :stroke="slice.color"
-                  stroke-width="12"
-                  :stroke-dasharray="`${slice.dash} ${100 - slice.dash}`"
-                  :stroke-dashoffset="slice.offset"
-                />
-              </svg>
-              <div class="donut-center-info">
-                <span class="center-number">{{ secondaryChartItems.length }}</span>
-                <span class="center-label">{{ isMaster ? 'equipe' : 'partes' }}</span>
-              </div>
+        <div v-if="periodAppointments.length === 0" class="empty-list">
+          Nenhum atendimento finalizado neste período.
+        </div>
+
+        <div v-else class="receipts-list">
+          <div v-for="app in periodAppointments" :key="app.id" class="receipt-row">
+            <span class="receipt-time">{{ app.scheduled_time || '09:00' }}</span>
+            <div class="receipt-info">
+              <span class="receipt-client">{{ app.client_name }}</span>
+              <span class="receipt-service">{{ app.service_name }} · {{ app.barber_name }}</span>
             </div>
-
-            <div class="donut-legend">
-              <div 
-                v-for="item in secondaryChartItems" 
-                :key="item.label" 
-                class="legend-row"
-              >
-                <div class="legend-swatch" :style="{ backgroundColor: item.color }"></div>
-                <span class="legend-name">{{ item.label }}</span>
-                <span class="legend-value">{{ formatCurrency(item.value) }}</span>
-                <span class="legend-percent">{{ item.percent }}%</span>
-              </div>
-            </div>
+            <span class="receipt-method">{{ app.payment_method || 'PIX' }}</span>
+            <span class="receipt-price">{{ formatCurrency(app.price_cents) }}</span>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </template>
 
-    <!-- RECENT ATENDIMENTOS TIMELINE -->
-    <section class="recent-section">
-      <h2 class="section-title">Atendimentos Concluídos</h2>
+    <!-- VISÃO OPERACIONAL DO BARBEIRO (SEM EXIBIR VALORES MONETÁRIOS NA PÁGINA INICIAL) -->
+    <template v-else>
+      <section class="balance-hero">
+        <span class="balance-title">
+          {{ viewPeriod === 'day' ? 'Resumo de Atendimentos do Dia' : 'Resumo de Atendimentos do Mês' }}
+        </span>
 
-      <div v-if="periodAppointments.length === 0" class="empty-list">
-        Nenhum atendimento finalizado neste período.
-      </div>
-
-      <div v-else class="receipts-list">
-        <div v-for="app in periodAppointments" :key="app.id" class="receipt-row">
-          <span class="receipt-time">{{ app.scheduled_time || '09:00' }}</span>
-          <div class="receipt-info">
-            <span class="receipt-client">{{ app.client_name }}</span>
-            <span class="receipt-service">{{ app.service_name }} <span v-if="isMaster">· {{ app.barber_name }}</span></span>
-          </div>
-          <span class="receipt-method">{{ app.payment_method || 'PIX' }}</span>
-          <span class="receipt-price">{{ formatCurrency(app.price_cents) }}</span>
+        <div class="balance-amount">
+          {{ barberAllPeriodAppointments.length }} {{ barberAllPeriodAppointments.length === 1 ? 'agendamento' : 'agendamentos' }}
         </div>
-      </div>
-    </section>
+
+        <div class="balance-substats">
+          <span>Aguardando / Confirmados: <strong class="amber-text">{{ barberPendingCount }}</strong></span>
+          <span class="dot-sep">·</span>
+          <span>Concluídos: <strong class="emerald-text">{{ currentMetrics.completedCount }}</strong></span>
+        </div>
+      </section>
+
+      <section class="recent-section">
+        <div class="section-header-row">
+          <h2 class="section-title">Meus Atendimentos no Período</h2>
+          <router-link to="/appointments" class="link-agenda">Ir para Agenda →</router-link>
+        </div>
+
+        <div v-if="barberAllPeriodAppointments.length === 0" class="empty-list">
+          Nenhum atendimento agendado ou finalizado neste período.
+        </div>
+
+        <div v-else class="receipts-list">
+          <div v-for="app in barberAllPeriodAppointments" :key="app.id" class="receipt-row">
+            <span class="receipt-time">{{ app.scheduled_time || '09:00' }}</span>
+            <div class="receipt-info">
+              <span class="receipt-client">{{ app.client_name }}</span>
+              <span class="receipt-service">{{ app.service_name }}</span>
+            </div>
+            <span 
+              class="status-pill" 
+              :class="app.status === 'COMPLETED' ? 'pill-completed' : 'pill-scheduled'"
+            >
+              {{ app.status === 'COMPLETED' ? 'Concluído' : 'Confirmado' }}
+            </span>
+          </div>
+        </div>
+      </section>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import { state, isMaster, formatCurrency } from '../store/state.js';
+import { state, isMaster, formatCurrency, uploadBarberAvatar, removeBarberAvatar } from '../store/state.js';
 
 const viewPeriod = ref('day');
 const currentDateObj = ref(new Date());
-const selectedMonth = ref(10);
+const selectedMonth = ref(new Date().getMonth() + 1);
+const uploadingPhoto = ref(false);
 
 const selectedDate = computed(() => {
   return currentDateObj.value.toISOString().split('T')[0];
@@ -211,16 +301,73 @@ const monthsList = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-const periodAppointments = computed(() => {
+async function onSelectNewPhoto(e) {
+  const file = e.target.files?.[0];
+  if (!file || !state.currentUser) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert('A imagem deve ter no máximo 5MB.');
+    e.target.value = '';
+    return;
+  }
+
+  try {
+    uploadingPhoto.value = true;
+    await uploadBarberAvatar(state.currentUser.id, file);
+    alert('Foto atualizada e sincronizada com o BarberNotify!');
+  } catch (err) {
+    alert('Erro ao atualizar foto: ' + (err.message || 'Erro desconhecido'));
+  } finally {
+    uploadingPhoto.value = false;
+    e.target.value = '';
+  }
+}
+
+async function onDeleteCurrentPhoto() {
+  if (!state.currentUser) return;
+  if (confirm('Deseja excluir sua foto atual? O BarberNotify passará a exibir seu avatar neutro de iniciais para os clientes.')) {
+    try {
+      uploadingPhoto.value = true;
+      await removeBarberAvatar(state.currentUser.id);
+      alert('Foto excluída com sucesso e sincronizada com o BarberNotify!');
+    } catch (err) {
+      alert('Erro ao excluir foto: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      uploadingPhoto.value = false;
+    }
+  }
+}
+
+const barberAllPeriodAppointments = computed(() => {
   return state.appointments.filter(app => {
-    if (app.status !== 'COMPLETED') return false;
-    if (!isMaster.value && app.barber_id !== state.currentUser.id) return false;
+    if (app.status === 'CANCELLED') return false;
+    if (!isMaster.value && app.barber_id !== state.currentUser?.id) return false;
 
     if (viewPeriod.value === 'day') {
       return app.scheduled_date === selectedDate.value;
     } else {
+      const year = currentDateObj.value.getFullYear();
       const monthStr = String(selectedMonth.value).padStart(2, '0');
-      return app.scheduled_date && app.scheduled_date.startsWith(`2026-${monthStr}`);
+      return app.scheduled_date && app.scheduled_date.startsWith(`${year}-${monthStr}`);
+    }
+  }).sort((a, b) => (a.scheduled_time || '').localeCompare(b.scheduled_time || ''));
+});
+
+const barberPendingCount = computed(() => {
+  return barberAllPeriodAppointments.value.filter(a => a.status !== 'COMPLETED').length;
+});
+
+const periodAppointments = computed(() => {
+  return state.appointments.filter(app => {
+    if (app.status !== 'COMPLETED') return false;
+    if (!isMaster.value && app.barber_id !== state.currentUser?.id) return false;
+
+    if (viewPeriod.value === 'day') {
+      return app.scheduled_date === selectedDate.value;
+    } else {
+      const year = currentDateObj.value.getFullYear();
+      const monthStr = String(selectedMonth.value).padStart(2, '0');
+      return app.scheduled_date && app.scheduled_date.startsWith(`${year}-${monthStr}`);
     }
   });
 });
@@ -306,35 +453,17 @@ const paymentDonutSlices = computed(() => {
 
 const secondaryChartItems = computed(() => {
   const total = currentMetrics.value.totalGross || 1;
-
-  if (isMaster.value) {
-    const palette = ['#d99726', '#38bdf8', '#a855f7', '#10b981'];
-    return state.users.filter(u => u.is_active).map((b, idx) => {
-      const bApps = periodAppointments.value.filter(a => a.barber_id === b.id);
-      const val = bApps.reduce((acc, a) => acc + (a.price_cents || 0), 0);
-      return {
-        label: b.nickname || b.name,
-        value: val,
-        color: palette[idx % palette.length],
-        percent: Math.round((val / total) * 100)
-      };
-    }).filter(i => i.value > 0);
-  } else {
-    return [
-      {
-        label: 'Sua Comissão',
-        value: currentMetrics.value.barberCommission,
-        color: '#10b981',
-        percent: Math.round((currentMetrics.value.barberCommission / total) * 100)
-      },
-      {
-        label: 'Barbearia',
-        value: currentMetrics.value.shopNet,
-        color: '#d99726',
-        percent: Math.round((currentMetrics.value.shopNet / total) * 100)
-      }
-    ];
-  }
+  const palette = ['#d99726', '#38bdf8', '#a855f7', '#10b981'];
+  return state.users.filter(u => u.is_active).map((b, idx) => {
+    const bApps = periodAppointments.value.filter(a => a.barber_id === b.id);
+    const val = bApps.reduce((acc, a) => acc + (a.price_cents || 0), 0);
+    return {
+      label: b.nickname || b.name,
+      value: val,
+      color: palette[idx % palette.length],
+      percent: Math.round((val / total) * 100)
+    };
+  }).filter(i => i.value > 0);
 });
 
 const secondaryDonutSlices = computed(() => {
@@ -437,6 +566,143 @@ const secondaryDonutSlices = computed(() => {
   background: #121622;
 }
 
+/* BARBER PROFILE BANNER */
+.barber-profile-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  background: rgba(24, 30, 44, 0.65);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.banner-avatar-wrap {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-gold);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #0f172a;
+}
+
+.banner-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.banner-avatar-Wait {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.banner-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.banner-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.banner-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.banner-role-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.role-master {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.role-barber {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.banner-sync-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.profile-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-photo-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-photo-upload {
+  background: rgba(251, 191, 36, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+}
+
+.btn-photo-upload:hover {
+  background: rgba(251, 191, 36, 0.24);
+}
+
+.btn-photo-delete {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.btn-photo-delete:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.btn-photo-action.disabled,
+.btn-photo-action:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 /* BALANCE HERO - ZERO BOXED BORDERS */
 .balance-hero {
   display: flex;
@@ -480,11 +746,33 @@ const secondaryDonutSlices = computed(() => {
   color: #10b981;
 }
 
+.amber-text {
+  color: #fbbf24;
+}
+
 /* ANALYTICS SECTION */
 .analytics-section, .recent-section {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.link-agenda {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+  text-decoration: none;
+}
+
+.link-agenda:hover {
+  text-decoration: underline;
 }
 
 .section-title {
@@ -654,5 +942,22 @@ const secondaryDonutSlices = computed(() => {
   font-family: var(--font-mono);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.pill-completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.pill-scheduled {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 </style>

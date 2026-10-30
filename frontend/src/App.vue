@@ -25,7 +25,8 @@
             </span>
           </button>
 
-          <div class="profile-switch">
+          <!-- Seletor de perfil disponível apenas para conta Master -->
+          <div v-if="isMaster" class="profile-switch">
             <select 
               :value="state.currentUser.id" 
               @change="handleUserSwitch($event.target.value)" 
@@ -36,6 +37,9 @@
               </option>
             </select>
           </div>
+          <span v-else class="logged-barber-label">
+            {{ state.currentUser.nickname || state.currentUser.name }}
+          </span>
 
           <button class="logout-btn" @click="handleLogout" title="Sair da conta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-icon">
@@ -50,13 +54,13 @@
 
       <!-- ICON-ONLY SLEEK FIXED TOP TABS (100% WIDTH, NO SCROLLING REQUIRED) -->
       <nav class="icon-nav-bar">
-        <router-link to="/" class="nav-btn" exact-active-class="active" title="Rendimento Diário">
+        <router-link to="/" class="nav-btn" exact-active-class="active" :title="isMaster ? 'Rendimento Diário' : 'Painel Inicial'">
           <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="20" x2="12" y2="10"/>
             <line x1="18" y1="20" x2="18" y2="4"/>
             <line x1="6" y1="20" x2="6" y2="16"/>
           </svg>
-          <span class="nav-caption">Rendimento</span>
+          <span class="nav-caption">{{ isMaster ? 'Rendimento' : 'Início' }}</span>
         </router-link>
 
         <router-link to="/appointments" class="nav-btn" active-class="active" title="Agenda & Atendimentos">
@@ -152,13 +156,13 @@
                 <polyline points="3 6 5 6 21 6"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
               </svg>
-              <span>Remover Foto</span>
+              <span>Excluir Foto</span>
             </button>
           </div>
 
           <p class="photo-hint">
             Formatos suportados: <strong>JPG, PNG ou WebP</strong> (máximo 5MB).<br>
-            A foto é salva em disco no servidor com link otimizado, sem inchar o banco.
+            A alteração reflete imediatamente para os clientes no <strong>BarberNotify</strong>.
           </p>
         </div>
 
@@ -210,7 +214,7 @@ async function handleAvatarFileChange(e) {
   try {
     uploadingAvatar.value = true;
     await uploadBarberAvatar(state.currentUser.id, file);
-    alert('Foto atualizada com sucesso!');
+    alert('Foto atualizada e sincronizada com o BarberNotify!');
   } catch (err) {
     alert('Falha ao enviar foto: ' + (err.message || 'Erro desconhecido'));
   } finally {
@@ -220,11 +224,11 @@ async function handleAvatarFileChange(e) {
 }
 
 async function handleRemoveAvatar() {
-  if (confirm('Deseja remover a foto personalizada e voltar ao avatar padrão?')) {
+  if (confirm('Deseja excluir sua foto atual? O BarberNotify passará a exibir seu avatar neutro de iniciais para os clientes.')) {
     try {
       uploadingAvatar.value = true;
       await removeBarberAvatar(state.currentUser.id);
-      alert('Foto removida com sucesso!');
+      alert('Foto excluída e sincronizada com o BarberNotify!');
     } catch (err) {
       alert('Falha ao remover foto: ' + (err.message || 'Erro desconhecido'));
     } finally {
@@ -463,6 +467,16 @@ async function handleRemoveAvatar() {
 
 .gold-accent {
   color: var(--accent-gold);
+}
+
+.logged-barber-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fbbf24;
+  padding: 0.2rem 0.5rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 6px;
 }
 
 .profile-select {

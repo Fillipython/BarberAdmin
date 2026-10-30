@@ -230,7 +230,7 @@ ORDER BY reference_year DESC, reference_month DESC;
 -- =============================================================================
 
 -- Barbeiros Reais (Sincronizados com BarberNotify)
-INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commission_percentage, bio) VALUES
+INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commission_percentage, avatar_url, bio) VALUES
 (
     '8a350074-5524-453d-a625-2b25e7e8ca59',
     'Carlos Silva',
@@ -240,6 +240,7 @@ INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commis
     '11988880001',
     'MASTER',
     100.00,
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=250&auto=format&fit=crop&q=80',
     'Fundador e Administrador Geral do Barber Man. Especialista em visagismo e cortes premium.'
 ),
 (
@@ -251,6 +252,7 @@ INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commis
     '11988880002',
     'BARBER',
     50.00,
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=250&auto=format&fit=crop&q=80',
     'Especialista em degrade navalhado e barba terapia.'
 ),
 (
@@ -262,9 +264,10 @@ INSERT INTO users (id, name, nickname, email, password_hash, phone, role, commis
     '11988880003',
     'BARBER',
     50.00,
+    'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=250&auto=format&fit=crop&q=80',
     'Especialista em platinados, luzes e cortes modernos.'
 )
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, nickname = EXCLUDED.nickname, email = EXCLUDED.email, password_hash = EXCLUDED.password_hash;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, nickname = EXCLUDED.nickname, email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, avatar_url = COALESCE(users.avatar_url, EXCLUDED.avatar_url);
 
 -- Tabela de Serviços Completa (16 Serviços Reais do BarberNotify)
 INSERT INTO services (id, name, description, category, price_cents, duration_minutes, display_order) VALUES

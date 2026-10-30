@@ -12,7 +12,7 @@
           </svg>
         </div>
         <h1 class="brand-title">Barber<span class="gold-accent">Admin</span></h1>
-        <p class="brand-subtitle">Gestão de Equipe, Agenda e Rendimento</p>
+        <p class="brand-subtitle">Acesso Exclusivo para Profissionais</p>
       </div>
 
       <!-- Error Alert -->
@@ -25,10 +25,10 @@
         <span>{{ errorMessage }}</span>
       </div>
 
-      <!-- Login Form -->
+      <!-- Login Form (Sem valores pré-preenchidos na tela inicial) -->
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label class="input-label" for="email">E-mail</label>
+          <label class="input-label" for="email">E-mail do Profissional</label>
           <div class="input-wrapper">
             <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -38,9 +38,9 @@
               id="email"
               type="email" 
               v-model="email" 
-              placeholder="seu.email@barberman.com.br"
+              placeholder="Digite seu e-mail..."
               required 
-              autocomplete="email"
+              autocomplete="username"
               class="text-input"
             />
           </div>
@@ -57,7 +57,7 @@
               id="password"
               :type="showPassword ? 'text' : 'password'" 
               v-model="password" 
-              placeholder="••••••••"
+              placeholder="Digite sua senha..."
               required 
               autocomplete="current-password"
               class="text-input"
@@ -86,37 +86,9 @@
         </button>
       </form>
 
-      <!-- Quick Fill Profiles for Ease of Use -->
-      <div class="quick-access">
-        <span class="quick-title">Acesso Rápido de Teste:</span>
-        <div class="quick-chips">
-          <button 
-            type="button"
-            class="chip-btn" 
-            @click="fillCredentials('contato@barberman.com.br', 'admin123')"
-          >
-            <span class="chip-dot master"></span> Carlos (Master)
-          </button>
-          <button 
-            type="button"
-            class="chip-btn" 
-            @click="fillCredentials('lucas@barberman.com.br', 'admin123')"
-          >
-            <span class="chip-dot"></span> Lucas
-          </button>
-          <button 
-            type="button"
-            class="chip-btn" 
-            @click="fillCredentials('matheus@barberman.com.br', 'admin123')"
-          >
-            <span class="chip-dot"></span> Matheus
-          </button>
-        </div>
-      </div>
-
       <!-- Security footer -->
       <div class="login-footer">
-        <span>🔒 Conexão Segura SSL • Criptografia BCrypt</span>
+        <span>🔒 Conexão Segura SSL • Integrado ao BarberNotify</span>
       </div>
     </div>
   </div>
@@ -129,17 +101,11 @@ import { login } from '../store/state.js';
 
 const router = useRouter();
 
-const email = ref('contato@barberman.com.br');
-const password = ref('admin123');
+const email = ref('');
+const password = ref('');
 const showPassword = ref(false);
 const loading = ref(false);
 const errorMessage = ref('');
-
-function fillCredentials(fillEmail, fillPass) {
-  email.value = fillEmail;
-  password.value = fillPass;
-  errorMessage.value = '';
-}
 
 async function handleLogin() {
   loading.value = true;
@@ -351,59 +317,6 @@ async function handleLogin() {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.quick-access {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.quick-title {
-  display: block;
-  font-size: 0.75rem;
-  color: #64748b;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-}
-
-.quick-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  font-size: 0.8rem;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.chip-btn:hover {
-  background: rgba(212, 175, 55, 0.12);
-  border-color: rgba(212, 175, 55, 0.3);
-  color: #f8fafc;
-}
-
-.chip-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #38bdf8;
-}
-
-.chip-dot.master {
-  background: #d4af37;
 }
 
 .login-footer {

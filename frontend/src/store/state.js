@@ -1,9 +1,24 @@
 import { reactive, computed } from 'vue';
 import { api } from '../services/api.js';
 
-const STORAGE_KEY = 'barber_admin_data_v5';
+const STORAGE_KEY = 'barber_admin_data_v6';
 
 const today = new Date().toISOString().split('T')[0];
+
+export const DEFAULT_BARBER_PHOTOS = {
+  '8a350074-5524-453d-a625-2b25e7e8ca59': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
+  '70b1fee3-a338-4444-90f9-f4551afc15fe': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
+  '0670b734-45c1-4435-ad0e-b8d6b3099c7e': 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=250'
+};
+
+export function buildInitialsAvatar(name) {
+  const parts = String(name || 'BM').trim().split(/\s+/);
+  const initials = parts.length > 1
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0].substring(0, 2).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="60" fill="#18202f"/><circle cx="60" cy="60" r="56" fill="none" stroke="#d4af37" stroke-width="3"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#fbbf24" font-family="Inter, sans-serif" font-weight="700" font-size="42">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
 const INITIAL_DATA = {
   currentUser: {
@@ -14,7 +29,7 @@ const INITIAL_DATA = {
     phone: '11988880001',
     role: 'MASTER',
     commission_percentage: 100,
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250'
+    avatar_url: DEFAULT_BARBER_PHOTOS['8a350074-5524-453d-a625-2b25e7e8ca59']
   },
   users: [
     {
@@ -25,7 +40,7 @@ const INITIAL_DATA = {
       phone: '11988880001',
       role: 'MASTER',
       commission_percentage: 100,
-      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+      avatar_url: DEFAULT_BARBER_PHOTOS['8a350074-5524-453d-a625-2b25e7e8ca59'],
       bio: 'Fundador e Administrador Geral do Barber Man. Especialista em visagismo e cortes premium.',
       is_active: true
     },
@@ -37,7 +52,7 @@ const INITIAL_DATA = {
       phone: '11988880002',
       role: 'BARBER',
       commission_percentage: 50,
-      avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
+      avatar_url: DEFAULT_BARBER_PHOTOS['70b1fee3-a338-4444-90f9-f4551afc15fe'],
       bio: 'Especialista em degrade navalhado e barba terapia.',
       is_active: true
     },
@@ -49,7 +64,7 @@ const INITIAL_DATA = {
       phone: '11988880003',
       role: 'BARBER',
       commission_percentage: 50,
-      avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
+      avatar_url: DEFAULT_BARBER_PHOTOS['0670b734-45c1-4435-ad0e-b8d6b3099c7e'],
       bio: 'Especialista em platinados, luzes e cortes modernos.',
       is_active: true
     }
@@ -86,6 +101,20 @@ const INITIAL_DATA = {
   ],
   appointments: [
     {
+      id: 'a1000000-0000-0000-0000-000000000000',
+      client_name: 'Bruno Mendes',
+      client_phone: '11977771004',
+      barber_id: '8a350074-5524-453d-a625-2b25e7e8ca59',
+      barber_name: 'Carlos Silva',
+      service_id: '5379777b-3c95-42b4-9baa-06b621a325b8',
+      service_name: 'Corte',
+      price_cents: 3000,
+      scheduled_date: today,
+      scheduled_time: '09:30',
+      status: 'COMPLETED',
+      payment_method: 'PIX'
+    },
+    {
       id: 'a1000000-0000-0000-0000-000000000001',
       client_name: 'Gabriel Santos',
       client_phone: '11977771001',
@@ -95,9 +124,9 @@ const INITIAL_DATA = {
       service_name: 'Platinado & Corte',
       price_cents: 13000,
       scheduled_date: today,
-      scheduled_time: '12:00',
+      scheduled_time: '11:00',
       status: 'CONFIRMED',
-      payment_method: 'PIX'
+      payment_method: null
     },
     {
       id: 'a1000000-0000-0000-0000-000000000002',
@@ -112,12 +141,39 @@ const INITIAL_DATA = {
       scheduled_time: '14:00',
       status: 'CONFIRMED',
       payment_method: null
+    },
+    {
+      id: 'a1000000-0000-0000-0000-000000000003',
+      client_name: 'Rafael Moreira',
+      client_phone: '11977771003',
+      barber_id: '0670b734-45c1-4435-ad0e-b8d6b3099c7e',
+      barber_name: 'Matheus Oliveira',
+      service_id: '497594fe-cdc2-4ae5-a928-523ffd3fd522',
+      service_name: 'Luzes & Corte',
+      price_cents: 10000,
+      scheduled_date: today,
+      scheduled_time: '16:00',
+      status: 'CONFIRMED',
+      payment_method: null
     }
   ]
 };
 
 const AUTH_TOKEN_KEY = 'barber_admin_auth_token_v1';
 const AUTH_USER_KEY = 'barber_admin_auth_user_v1';
+
+// Canal de sincronização em tempo real entre abas (BarberAdmin <-> BarberNotify)
+const notifySyncChannel = typeof window !== 'undefined' && window.BroadcastChannel
+  ? new BroadcastChannel('barber_notify_sync')
+  : null;
+
+if (notifySyncChannel) {
+  notifySyncChannel.onmessage = (event) => {
+    if (event.data === 'appointment_changed') {
+      syncFromBackend();
+    }
+  };
+}
 
 export function normalizeService(s) {
   if (!s) return s;
@@ -135,9 +191,15 @@ export function normalizeService(s) {
   };
 }
 
-export function formatAvatarUrl(url) {
+export function formatAvatarUrl(url, name = 'Barbeiro', barberId = null) {
+  if (url === 'REMOVED' || url === 'NONE') {
+    return buildInitialsAvatar(name);
+  }
   if (!url) {
-    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250';
+    if (barberId && DEFAULT_BARBER_PHOTOS[barberId]) {
+      return DEFAULT_BARBER_PHOTOS[barberId];
+    }
+    return buildInitialsAvatar(name);
   }
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
     return url;
@@ -159,9 +221,9 @@ export function formatAvatarUrl(url) {
 export function normalizeUser(u) {
   if (!u) return u;
   const active = (u.is_active ?? u.isActive) !== false;
-  const commission = Number(u.commission_percentage ?? u.commissionPercentage) || 100;
+  const commission = Number(u.commission_percentage ?? u.commissionPercentage) || (u.role === 'MASTER' ? 100 : 50);
   const rawAvatar = u.avatar_url ?? u.avatarUrl;
-  const avatar = formatAvatarUrl(rawAvatar);
+  const avatar = formatAvatarUrl(rawAvatar, u.name, u.id);
   return {
     ...u,
     is_active: active,
@@ -170,7 +232,8 @@ export function normalizeUser(u) {
     commissionPercentage: commission,
     avatar_url: avatar,
     avatarUrl: avatar,
-    raw_avatar_url: rawAvatar
+    raw_avatar_url: rawAvatar,
+    has_custom_photo: Boolean(rawAvatar && rawAvatar !== 'REMOVED' && rawAvatar !== 'NONE')
   };
 }
 
@@ -187,6 +250,33 @@ export function normalizeClient(c) {
   };
 }
 
+export function normalizeAppointment(a) {
+  if (!a) return a;
+  let schedDate = a.scheduled_date;
+  let schedTime = a.scheduled_time || a.timeFormatted;
+  if (!schedDate && a.scheduledAt) {
+    schedDate = String(a.scheduledAt).split('T')[0];
+  }
+  if (!schedTime && a.scheduledAt && String(a.scheduledAt).includes('T')) {
+    schedTime = String(a.scheduledAt).split('T')[1].substring(0, 5);
+  }
+  return {
+    id: a.id,
+    client_id: a.client_id ?? a.clientId,
+    client_name: a.client_name ?? a.clientName ?? 'Cliente',
+    client_phone: a.client_phone ?? a.clientPhone ?? '',
+    barber_id: a.barber_id ?? a.barberId,
+    barber_name: a.barber_name ?? a.barberName ?? 'Barbeiro',
+    service_id: a.service_id ?? a.serviceId,
+    service_name: a.service_name ?? a.serviceName ?? 'Serviço',
+    price_cents: a.price_cents ?? a.priceCents ?? 0,
+    scheduled_date: schedDate || today,
+    scheduled_time: schedTime || '09:00',
+    status: a.status || 'CONFIRMED',
+    payment_method: a.payment_method ?? a.paymentMethod ?? (a.status === 'COMPLETED' ? 'PIX' : null)
+  };
+}
+
 function loadSavedState() {
   let loaded = { ...INITIAL_DATA };
   try {
@@ -198,7 +288,6 @@ function loadSavedState() {
     console.error('Failed to load state from localStorage', e);
   }
 
-  // Normalizar coleções carregadas do storage para garantir interoperabilidade camelCase e snake_case
   if (Array.isArray(loaded.services)) {
     loaded.services = loaded.services.map(normalizeService);
   }
@@ -208,8 +297,10 @@ function loadSavedState() {
   if (Array.isArray(loaded.clients)) {
     loaded.clients = loaded.clients.map(normalizeClient);
   }
+  if (Array.isArray(loaded.appointments)) {
+    loaded.appointments = loaded.appointments.map(normalizeAppointment);
+  }
 
-  // Verificar se há sessão autenticada ativa no localStorage
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const savedUserRaw = localStorage.getItem(AUTH_USER_KEY);
   let savedUser = null;
@@ -247,22 +338,22 @@ export async function login(email, password) {
   const response = await api.auth.login({ email, password });
   state.isAuthenticated = true;
   state.token = response.token;
-  state.currentUser = {
+  state.currentUser = normalizeUser({
     id: response.id,
     name: response.name,
     nickname: response.nickname,
     email: response.email,
     phone: response.phone,
     role: response.role,
-    commission_percentage: Number(response.commissionPercentage) || 100,
-    avatar_url: response.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250'
-  };
+    commissionPercentage: response.commissionPercentage,
+    avatarUrl: response.avatarUrl
+  });
 
   localStorage.setItem(AUTH_TOKEN_KEY, response.token);
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.currentUser));
   saveState();
 
-  syncFromBackend();
+  await syncFromBackend();
   return response;
 }
 
@@ -312,14 +403,14 @@ export function toggleServiceStatus(id) {
 }
 
 export function addBarber(barber) {
-  const newBarber = {
+  const newBarber = normalizeUser({
     id: `barber-${Date.now()}`,
     role: 'BARBER',
     commission_percentage: Number(barber.commission_percentage) || 50,
-    avatar_url: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=250`,
+    avatar_url: null,
     is_active: true,
     ...barber
-  };
+  });
   state.users.push(newBarber);
   saveState();
   return newBarber;
@@ -346,11 +437,11 @@ export function addClient(client) {
 }
 
 export function addAppointment(appointment) {
-  const newApp = {
+  const newApp = normalizeAppointment({
     id: `app-${Date.now()}`,
     status: 'CONFIRMED',
     ...appointment
-  };
+  });
   state.appointments.unshift(newApp);
   saveState();
   return newApp;
@@ -362,6 +453,9 @@ export function updateAppointmentStatus(id, newStatus, paymentMethod = 'PIX') {
     app.status = newStatus;
     if (newStatus === 'COMPLETED') {
       app.payment_method = paymentMethod;
+      api.appointments.checkout(id, paymentMethod, app.price_cents).catch(() => {});
+    } else {
+      api.appointments.updateStatus(id, newStatus).catch(() => {});
     }
     saveState();
   }
@@ -371,6 +465,7 @@ export function updateAppointmentPrice(id, newPriceCents) {
   const app = state.appointments.find(a => a.id === id);
   if (app) {
     app.price_cents = newPriceCents;
+    api.appointments.overridePrice(id, newPriceCents).catch(() => {});
     saveState();
   }
 }
@@ -381,23 +476,31 @@ export function updateAppointmentService(id, serviceId, serviceName, priceCents)
     app.service_id = serviceId;
     app.service_name = serviceName;
     app.price_cents = priceCents;
+    api.appointments.changeService(id, serviceId, priceCents).catch(() => {});
     saveState();
   }
 }
 
-// Sincronização automática em segundo plano com a API
+// Sincronização automática em segundo plano com a API (incluindo agendamentos vindos do BarberNotify)
 export async function syncFromBackend() {
   try {
-    const [staffList, servicesList, clientsList] = await Promise.all([
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [staffList, servicesList, clientsList, appointmentsList] = await Promise.all([
       api.staff.list().catch(() => null),
       api.services.list().catch(() => null),
-      api.clients.list().catch(() => null)
+      api.clients.list().catch(() => null),
+      api.appointments.list(todayStr, null, 'MASTER').catch(() => null)
     ]);
 
     if (staffList && staffList.length > 0) {
       state.users = staffList.map(normalizeUser);
-      const current = state.users.find(u => u.id === state.currentUser?.id) || state.users[0];
-      if (current) state.currentUser = current;
+      if (state.currentUser) {
+        const current = state.users.find(u => u.id === state.currentUser.id);
+        if (current) {
+          state.currentUser = current;
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.currentUser));
+        }
+      }
     }
 
     if (servicesList && servicesList.length > 0) {
@@ -406,6 +509,12 @@ export async function syncFromBackend() {
 
     if (clientsList && clientsList.length > 0) {
       state.clients = clientsList.map(normalizeClient);
+    }
+
+    if (Array.isArray(appointmentsList) && appointmentsList.length > 0) {
+      const normalizedFromApi = appointmentsList.map(normalizeAppointment);
+      const otherDays = state.appointments.filter(a => a.scheduled_date !== todayStr);
+      state.appointments = [...normalizedFromApi, ...otherDays];
     }
 
     saveState();
@@ -425,7 +534,23 @@ export function formatCurrency(cents) {
   }).format((cents || 0) / 100);
 }
 
-// Upload de foto do profissional (respeita a regra de cada um editar sua própria foto)
+async function notifyBarberNotifyAvatarChange(barberId, rawAvatarUrl) {
+  try {
+    const isProd = typeof window !== 'undefined' && (window.location.hostname.includes('fillipython.ddns.net') || window.location.pathname.startsWith('/BarberAdmin'));
+    const notifyApiUrl = isProd
+      ? `${window.location.protocol}//${window.location.host}/BarberNotify/api/barbers/${barberId}/avatar`
+      : `http://localhost:8081/api/barbers/${barberId}/avatar`;
+
+    await fetch(notifyApiUrl, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatarUrl: rawAvatarUrl })
+    });
+  } catch (e) {}
+  notifySyncChannel?.postMessage('staff_updated');
+}
+
+// Upload de foto do profissional (respeita a regra de cada um editar sua própria foto e sincroniza com o BarberNotify)
 export async function uploadBarberAvatar(barberId, file) {
   const caller = state.currentUser;
   const callerId = caller ? caller.id : barberId;
@@ -434,13 +559,11 @@ export async function uploadBarberAvatar(barberId, file) {
   const updatedStaff = await api.staff.uploadAvatar(barberId, file, callerId, callerRole);
   const normalized = normalizeUser(updatedStaff);
 
-  // Atualiza lista em memória
   const idx = state.users.findIndex(u => u.id === barberId);
   if (idx !== -1) {
     state.users[idx] = { ...state.users[idx], ...normalized };
   }
 
-  // Se for o próprio usuário atualmente selecionado, sincroniza
   if (state.currentUser && state.currentUser.id === barberId) {
     state.currentUser = { ...state.currentUser, ...normalized };
     try {
@@ -449,10 +572,11 @@ export async function uploadBarberAvatar(barberId, file) {
   }
 
   saveState();
+  await notifyBarberNotifyAvatarChange(barberId, updatedStaff.avatarUrl);
   return normalized;
 }
 
-// Remove a foto do profissional e restaura o avatar padrão
+// Remove a foto do profissional e sincroniza com o BarberNotify para exibir avatar neutro aos clientes
 export async function removeBarberAvatar(barberId) {
   const caller = state.currentUser;
   const callerId = caller ? caller.id : barberId;
@@ -474,5 +598,6 @@ export async function removeBarberAvatar(barberId) {
   }
 
   saveState();
+  await notifyBarberNotifyAvatarChange(barberId, 'REMOVED');
   return normalized;
 }
