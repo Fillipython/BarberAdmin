@@ -74,7 +74,7 @@
             class="btn btn-secondary btn-sm full-width btn-card-avatar" 
             @click="openBarberPhotoModal(barber)"
           >
-            📷 Alterar / Remover Foto
+            Alterar / Remover Foto
           </button>
 
           <button 
@@ -100,7 +100,6 @@
           <div class="large-avatar-preview">
             <img :src="selectedBarberForPhoto.avatar_url" :alt="selectedBarberForPhoto.name" class="large-avatar-img" />
             <div v-if="uploadingAvatar" class="avatar-loading-overlay">
-              <span class="loading-spinner">⏳</span>
               <span>Processando...</span>
             </div>
           </div>

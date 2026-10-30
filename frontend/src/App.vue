@@ -116,7 +116,6 @@
           <div class="large-avatar-preview">
             <img :src="state.currentUser.avatar_url" :alt="state.currentUser.name" class="large-avatar-img" />
             <div v-if="uploadingAvatar" class="avatar-loading-overlay">
-              <span class="loading-spinner">⏳</span>
               <span>Processando...</span>
             </div>
           </div>

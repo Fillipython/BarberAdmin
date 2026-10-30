@@ -1,7 +1,7 @@
 import { reactive, computed } from 'vue';
 import { api } from '../services/api.js';
 
-const STORAGE_KEY = 'barber_admin_data_v7';
+const STORAGE_KEY = 'barber_admin_data_v8';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -306,7 +306,14 @@ function loadSavedState() {
   let savedUser = null;
   if (savedUserRaw) {
     try {
-      savedUser = normalizeUser(JSON.parse(savedUserRaw));
+      const parsedUser = JSON.parse(savedUserRaw);
+      if (parsedUser && String(parsedUser.avatar_url || parsedUser.avatarUrl || '').includes('1534528741775')) {
+        parsedUser.avatar_url = DEFAULT_BARBER_PHOTOS[parsedUser.id] || DEFAULT_BARBER_PHOTOS['8a350074-5524-453d-a625-2b25e7e8ca59'];
+        parsedUser.avatarUrl = parsedUser.avatar_url;
+        parsedUser.raw_avatar_url = parsedUser.avatar_url;
+      }
+      savedUser = normalizeUser(parsedUser);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(savedUser));
     } catch (e) {}
   }
 

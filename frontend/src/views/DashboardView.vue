@@ -41,7 +41,7 @@
       <div class="profile-banner-left">
         <div class="banner-avatar-wrap">
           <img :src="state.currentUser.avatar_url" :alt="state.currentUser.name" class="banner-avatar-img" />
-          <span v-if="uploadingPhoto" class="banner-avatar-Wait">⏳</span>
+          <span v-if="uploadingPhoto" class="banner-avatar-Wait">...</span>
         </div>
         <div class="banner-user-info">
           <div class="banner-name-row">
@@ -65,7 +65,7 @@
             style="display:none;" 
             :disabled="uploadingPhoto"
           />
-          <span>📷 {{ uploadingPhoto ? 'Enviando...' : 'Mudar Foto' }}</span>
+          <span>{{ uploadingPhoto ? 'Enviando...' : 'Mudar Foto' }}</span>
         </label>
         <button 
           type="button" 
@@ -73,7 +73,7 @@
           @click="onDeleteCurrentPhoto"
           :disabled="uploadingPhoto"
         >
-          🗑️ Excluir Foto
+          Excluir Foto
         </button>
       </div>
     </section>

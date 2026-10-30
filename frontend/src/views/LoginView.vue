@@ -86,9 +86,9 @@
         </button>
       </form>
 
-      <!-- Security footer -->
+      <!-- Footer -->
       <div class="login-footer">
-        <span>🔒 Conexão Segura SSL • Integrado ao BarberNotify</span>
+        <span>Integrado ao BarberNotify</span>
       </div>
     </div>
   </div>
