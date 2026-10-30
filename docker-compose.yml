@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-barberadmin_secret_2026}
       TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
     ports:
-      - "${POSTGRES_EXTERNAL_PORT:-5433}:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
