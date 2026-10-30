@@ -1,11 +1,18 @@
 function resolveApiBase() {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     const protocol = window.location.protocol;
-    if (host.includes('fillipython.ddns.net') || window.location.pathname.startsWith('/BarberAdmin')) {
+    if (
+      host.includes('fillipython.ddns.net') ||
+      window.location.pathname.startsWith('/BarberAdmin') ||
+      (host !== 'localhost' && host !== '127.0.0.1')
+    ) {
       return `${protocol}//${window.location.host}/BarberAdmin/api`;
     }
+  }
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')) {
+    const envUrl = import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+    return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   }
   return 'http://localhost:8080/api';
 }
@@ -16,7 +23,7 @@ const V1 = `${API_BASE}/v1`;
 async function request(endpoint, options = {}) {
   const url = `${V1}${endpoint}`;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers || {})
   };
 
@@ -45,10 +52,9 @@ export const api = {
 
   // BarberNotify
   barbernotify: {
-    sendWebhookEvent: (eventData) => request('/barbernotify/webhook', {
+    sendWebhookEvent: (eventData) => request('/barbernotify/sync', {
       method: 'POST',
-      body: JSON.stringify(eventData),
-      headers: { 'X-BarberNotify-Secret': 'barbernotify_webhook_secret_2026' }
+      body: JSON.stringify(eventData)
     }),
     getStatus: () => request('/barbernotify/status')
   },

@@ -71,7 +71,6 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:${BACKEND_PORT:-8080}
     networks:
       - barber_admin_network
 

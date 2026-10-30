@@ -44,10 +44,10 @@ public class DataSyncInitializer {
     @Transactional
     public void syncInitialDataWithBarberNotify() {
         try {
-            // 1. Garante que os 3 barbeiros sincronizados com o BarberNotify tenham suas fotos padrão se ainda estiverem nulas
+            // 1. Garante que os 3 barbeiros sincronizados com o BarberNotify tenham suas fotos padrão se ainda estiverem nulas ou com link antigo incorreto
             for (Map.Entry<UUID, String> entry : BARBERNOTIFY_DEFAULT_AVATARS.entrySet()) {
                 userRepository.findById(entry.getKey()).ifPresent(user -> {
-                    if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
+                    if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank() || user.getAvatarUrl().contains("1534528741775")) {
                         user.setAvatarUrl(entry.getValue());
                         userRepository.save(user);
                         log.info("Foto padrão do BarberNotify sincronizada para o barbeiro {}", user.getName());

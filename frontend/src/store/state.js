@@ -1,7 +1,7 @@
 import { reactive, computed } from 'vue';
 import { api } from '../services/api.js';
 
-const STORAGE_KEY = 'barber_admin_data_v6';
+const STORAGE_KEY = 'barber_admin_data_v7';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -195,11 +195,11 @@ export function formatAvatarUrl(url, name = 'Barbeiro', barberId = null) {
   if (url === 'REMOVED' || url === 'NONE') {
     return buildInitialsAvatar(name);
   }
-  if (!url) {
+  if (!url || String(url).includes('1534528741775')) {
     if (barberId && DEFAULT_BARBER_PHOTOS[barberId]) {
       return DEFAULT_BARBER_PHOTOS[barberId];
     }
-    return buildInitialsAvatar(name);
+    return DEFAULT_BARBER_PHOTOS['8a350074-5524-453d-a625-2b25e7e8ca59'] || buildInitialsAvatar(name);
   }
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
     return url;
