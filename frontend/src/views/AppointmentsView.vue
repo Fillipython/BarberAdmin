@@ -13,9 +13,74 @@
         </div>
       </div>
 
-      <button class="btn btn-primary btn-sm" @click="openNewModal">
-        + Agendar
-      </button>
+      <div class="header-actions-row">
+        <button
+          v-if="isMaster"
+          type="button"
+          class="btn btn-sm"
+          :class="isShopClosedOnDay ? 'btn-reopen-day' : 'btn-close-day'"
+          :disabled="togglingBlock"
+          @click="handleToggleShopDay"
+        >
+          {{ togglingBlock ? 'Processando...' : (isShopClosedOnDay ? 'Reabrir Loja no Dia' : 'Fechar Loja no Dia') }}
+        </button>
+
+        <button
+          v-else
+          type="button"
+          class="btn btn-sm"
+          :class="isBarberClosedOnDay(state.currentUser?.id) ? 'btn-reopen-day' : 'btn-close-day'"
+          :disabled="togglingBlock || isShopClosedByMasterOnDay"
+          @click="handleToggleBarberDay(state.currentUser?.id)"
+        >
+          {{
+            isShopClosedByMasterOnDay
+              ? 'Loja Fechada pelo Master'
+              : (togglingBlock ? 'Processando...' : (isBarberClosedOnDay(state.currentUser?.id) ? 'Reabrir Meu Horário no Dia' : 'Fechar Meu Horário no Dia'))
+          }}
+        </button>
+
+        <button class="btn btn-primary btn-sm" @click="openNewModal">
+          + Agendar
+        </button>
+      </div>
+    </div>
+
+    <!-- Painel de Disponibilidade por Barbeiro (Master pode fechar/reabrir horário de qualquer barbeiro; Barbeiro vê seu status) -->
+    <div class="day-availability-bar" :class="{ 'shop-closed-banner': isShopClosedOnDay || (!isMaster && isBarberClosedOnDay(state.currentUser?.id)) }">
+      <div class="availability-info">
+        <span class="availability-title">
+          <template v-if="isShopClosedOnDay">
+            Loja fechada nesta data — todos os horários estão bloqueados no BarberNotify.
+          </template>
+          <template v-else-if="!isMaster && isBarberClosedOnDay(state.currentUser?.id)">
+            Seu horário completo está fechado para clientes nesta data no BarberNotify.
+          </template>
+          <template v-else>
+            Disponibilidade no dia ({{ formattedDateDisplay }}):
+          </template>
+        </span>
+      </div>
+
+      <div v-if="isMaster" class="barber-availability-chips">
+        <div
+          v-for="b in state.users"
+          :key="b.id"
+          class="barber-chip-item"
+          :class="{ 'chip-closed': isBarberClosedOnDay(b.id) }"
+        >
+          <span class="chip-name">{{ b.nickname || b.name }}</span>
+          <span class="chip-status">{{ isBarberClosedOnDay(b.id) ? 'Fechado' : 'Aberto' }}</span>
+          <button
+            type="button"
+            class="chip-toggle-btn"
+            :disabled="togglingBlock"
+            @click="handleToggleBarberDay(b.id)"
+          >
+            {{ isBarberClosedOnDay(b.id) ? 'Reabrir' : 'Fechar Horário' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Understated Text Tabs for Status & Barber Filter -->
@@ -285,18 +350,23 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { 
   state, 
   isMaster, 
   formatCurrency, 
+  toLocalIsoDate,
   addAppointment, 
   updateAppointmentStatus,
   updateAppointmentPrice,
-  updateAppointmentService 
+  updateAppointmentService,
+  syncDateFromBackend,
+  closeDaySchedule,
+  reopenDaySchedule
 } from '../store/state.js';
 
 const showModal = ref(false);
+const togglingBlock = ref(false);
 const completingApp = ref(null);
 const completePaymentMethod = ref('PIX');
 const completeFinalPriceDisplay = ref(0);
@@ -320,15 +390,79 @@ const statusOptions = [
 const currentDateObj = ref(new Date());
 
 const filterDate = computed(() => {
-  return currentDateObj.value.toISOString().split('T')[0];
+  return toLocalIsoDate(currentDateObj.value);
 });
+
+watch(filterDate, (newDate) => {
+  syncDateFromBackend(newDate);
+}, { immediate: true });
+
+const currentDayBlock = computed(() => {
+  return state.dayBlocks?.[filterDate.value] || { shopClosed: false, shopClosedByMaster: false, closedBarberIds: [] };
+});
+
+const isShopClosedByMasterOnDay = computed(() => {
+  return Boolean(currentDayBlock.value.shopClosedByMaster);
+});
+
+const isShopClosedOnDay = computed(() => {
+  if (currentDayBlock.value.shopClosed) return true;
+  const closedIds = currentDayBlock.value.closedBarberIds || [];
+  const activeUsers = (state.users || []).filter(u => u.is_active !== false);
+  return activeUsers.length > 0 && activeUsers.every(u => closedIds.includes(u.id));
+});
+
+function isBarberClosedOnDay(barberId) {
+  if (!barberId) return false;
+  if (isShopClosedOnDay.value) return true;
+  const closedIds = currentDayBlock.value.closedBarberIds || [];
+  if (closedIds.includes(barberId)) return true;
+  return state.appointments.some(a =>
+    a.scheduled_date === filterDate.value &&
+    a.barber_id === barberId &&
+    a.status !== 'CANCELLED' &&
+    a.is_day_block
+  );
+}
+
+async function handleToggleShopDay() {
+  if (!isMaster.value) return;
+  try {
+    togglingBlock.value = true;
+    if (isShopClosedOnDay.value) {
+      await reopenDaySchedule({ date: filterDate.value, openShop: true });
+    } else {
+      await closeDaySchedule({ date: filterDate.value, closeShop: true });
+    }
+  } catch (err) {
+    alert(err.message || 'Erro ao atualizar fechamento da loja.');
+  } finally {
+    togglingBlock.value = false;
+  }
+}
+
+async function handleToggleBarberDay(barberId) {
+  if (!barberId) return;
+  try {
+    togglingBlock.value = true;
+    if (isBarberClosedOnDay(barberId)) {
+      await reopenDaySchedule({ date: filterDate.value, barberId, openShop: false });
+    } else {
+      await closeDaySchedule({ date: filterDate.value, barberId, closeShop: false });
+    }
+  } catch (err) {
+    alert(err.message || 'Erro ao atualizar fechamento de horário.');
+  } finally {
+    togglingBlock.value = false;
+  }
+}
 
 const activeServices = computed(() => {
   return (state.services || []).filter(s => (s.is_active ?? s.isActive) !== false);
 });
 
 const isToday = computed(() => {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toLocalIsoDate(new Date());
   return filterDate.value === todayStr;
 });
 
@@ -358,6 +492,7 @@ const form = ref({
 
 const filteredAppointments = computed(() => {
   return state.appointments.filter(app => {
+    if (app.is_day_block) return false;
     if (!isMaster.value && app.barber_id !== state.currentUser.id) return false;
     if (isMaster.value && selectedBarberFilter.value !== 'ALL' && app.barber_id !== selectedBarberFilter.value) return false;
     if (app.scheduled_date !== filterDate.value) return false;
@@ -484,6 +619,123 @@ function getStatusClass(status) {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.header-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.btn-close-day {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  font-weight: 600;
+}
+
+.btn-close-day:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.24);
+  color: #fecaca;
+}
+
+.btn-reopen-day {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-weight: 600;
+}
+
+.btn-reopen-day:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.26);
+  color: #a7f3d0;
+}
+
+.day-availability-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-hairline);
+}
+
+.day-availability-bar.shop-closed-banner {
+  background: rgba(239, 68, 68, 0.09);
+  border-color: rgba(239, 68, 68, 0.32);
+}
+
+.availability-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.shop-closed-banner .availability-title {
+  color: #fca5a5;
+}
+
+.barber-availability-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.barber-chip-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.76rem;
+}
+
+.barber-chip-item.chip-closed {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.chip-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chip-status {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.38rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  font-weight: 600;
+}
+
+.chip-closed .chip-status {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.chip-toggle-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-toggle-btn:hover:not(:disabled) {
+  border-color: var(--accent-gold);
+  color: #fbbf24;
 }
 
 .header-left {

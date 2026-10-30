@@ -75,6 +75,58 @@
         >
           Excluir Foto
         </button>
+
+        <button
+          v-if="isMaster"
+          type="button"
+          class="btn-photo-action"
+          :class="isShopClosedOnDay ? 'btn-day-reopen' : 'btn-day-close'"
+          :disabled="togglingBlock"
+          @click="handleToggleShopDay"
+        >
+          {{ togglingBlock ? 'Processando...' : (isShopClosedOnDay ? 'Reabrir Loja no Dia' : 'Fechar Loja no Dia') }}
+        </button>
+
+        <button
+          v-else
+          type="button"
+          class="btn-photo-action"
+          :class="isBarberClosedOnDay(state.currentUser?.id) ? 'btn-day-reopen' : 'btn-day-close'"
+          :disabled="togglingBlock || isShopClosedByMasterOnDay"
+          @click="handleToggleBarberDay(state.currentUser?.id)"
+        >
+          {{
+            isShopClosedByMasterOnDay
+              ? 'Loja Fechada pelo Master'
+              : (togglingBlock ? 'Processando...' : (isBarberClosedOnDay(state.currentUser?.id) ? 'Reabrir Meu Horário' : 'Fechar Meu Horário'))
+          }}
+        </button>
+      </div>
+    </section>
+
+    <!-- CONTROLE RÁPIDO DE DISPONIBILIDADE DOS BARBEIROS NO DIA (PARA O MASTER) -->
+    <section v-if="isMaster && viewPeriod === 'day'" class="master-day-control-bar">
+      <span class="master-control-label">
+        Disponibilidade no dia ({{ formattedDateDisplay }}):
+      </span>
+      <div class="master-barber-pills">
+        <div
+          v-for="b in state.users"
+          :key="b.id"
+          class="master-barber-pill"
+          :class="{ 'pill-closed': isBarberClosedOnDay(b.id) }"
+        >
+          <span class="pill-barber-name">{{ b.nickname || b.name }}</span>
+          <span class="pill-barber-state">{{ isBarberClosedOnDay(b.id) ? 'Fechado' : 'Aberto' }}</span>
+          <button
+            type="button"
+            class="pill-barber-btn"
+            :disabled="togglingBlock"
+            @click="handleToggleBarberDay(b.id)"
+          >
+            {{ isBarberClosedOnDay(b.id) ? 'Reabrir' : 'Fechar Horário' }}
+          </button>
+        </div>
       </div>
     </section>
 
@@ -272,17 +324,92 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { state, isMaster, formatCurrency, uploadBarberAvatar, removeBarberAvatar } from '../store/state.js';
+import { ref, computed, watch } from 'vue';
+import {
+  state,
+  isMaster,
+  formatCurrency,
+  toLocalIsoDate,
+  uploadBarberAvatar,
+  removeBarberAvatar,
+  syncDateFromBackend,
+  closeDaySchedule,
+  reopenDaySchedule
+} from '../store/state.js';
 
 const viewPeriod = ref('day');
 const currentDateObj = ref(new Date());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const uploadingPhoto = ref(false);
+const togglingBlock = ref(false);
 
 const selectedDate = computed(() => {
-  return currentDateObj.value.toISOString().split('T')[0];
+  return toLocalIsoDate(currentDateObj.value);
 });
+
+watch(selectedDate, (newDate) => {
+  syncDateFromBackend(newDate);
+}, { immediate: true });
+
+const currentDayBlock = computed(() => {
+  return state.dayBlocks?.[selectedDate.value] || { shopClosed: false, shopClosedByMaster: false, closedBarberIds: [] };
+});
+
+const isShopClosedByMasterOnDay = computed(() => {
+  return Boolean(currentDayBlock.value.shopClosedByMaster);
+});
+
+const isShopClosedOnDay = computed(() => {
+  if (currentDayBlock.value.shopClosed) return true;
+  const closedIds = currentDayBlock.value.closedBarberIds || [];
+  const activeUsers = (state.users || []).filter(u => u.is_active !== false);
+  return activeUsers.length > 0 && activeUsers.every(u => closedIds.includes(u.id));
+});
+
+function isBarberClosedOnDay(barberId) {
+  if (!barberId) return false;
+  if (isShopClosedOnDay.value) return true;
+  const closedIds = currentDayBlock.value.closedBarberIds || [];
+  if (closedIds.includes(barberId)) return true;
+  return state.appointments.some(a =>
+    a.scheduled_date === selectedDate.value &&
+    a.barber_id === barberId &&
+    a.status !== 'CANCELLED' &&
+    a.is_day_block
+  );
+}
+
+async function handleToggleShopDay() {
+  if (!isMaster.value) return;
+  try {
+    togglingBlock.value = true;
+    if (isShopClosedOnDay.value) {
+      await reopenDaySchedule({ date: selectedDate.value, openShop: true });
+    } else {
+      await closeDaySchedule({ date: selectedDate.value, closeShop: true });
+    }
+  } catch (err) {
+    alert(err.message || 'Erro ao atualizar fechamento da loja.');
+  } finally {
+    togglingBlock.value = false;
+  }
+}
+
+async function handleToggleBarberDay(barberId) {
+  if (!barberId) return;
+  try {
+    togglingBlock.value = true;
+    if (isBarberClosedOnDay(barberId)) {
+      await reopenDaySchedule({ date: selectedDate.value, barberId, openShop: false });
+    } else {
+      await closeDaySchedule({ date: selectedDate.value, barberId, closeShop: false });
+    }
+  } catch (err) {
+    alert(err.message || 'Erro ao atualizar fechamento de horário.');
+  } finally {
+    togglingBlock.value = false;
+  }
+}
 
 const formattedDateDisplay = computed(() => {
   const options = { weekday: 'short', day: '2-digit', month: 'short' };
@@ -340,6 +467,7 @@ async function onDeleteCurrentPhoto() {
 
 const barberAllPeriodAppointments = computed(() => {
   return state.appointments.filter(app => {
+    if (app.is_day_block) return false;
     if (app.status === 'CANCELLED') return false;
     if (!isMaster.value && app.barber_id !== state.currentUser?.id) return false;
 
@@ -359,6 +487,7 @@ const barberPendingCount = computed(() => {
 
 const periodAppointments = computed(() => {
   return state.appointments.filter(app => {
+    if (app.is_day_block) return false;
     if (app.status !== 'COMPLETED') return false;
     if (!isMaster.value && app.barber_id !== state.currentUser?.id) return false;
 
@@ -958,6 +1087,105 @@ const secondaryDonutSlices = computed(() => {
 
 .pill-scheduled {
   background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.btn-day-close {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.btn-day-close:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.24);
+  color: #fecaca;
+}
+
+.btn-day-reopen {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.btn-day-reopen:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.26);
+  color: #a7f3d0;
+}
+
+.master-day-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-hairline);
+}
+
+.master-control-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.master-barber-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.master-barber-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.76rem;
+}
+
+.master-barber-pill.pill-closed {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.pill-barber-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pill-barber-state {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.38rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  font-weight: 600;
+}
+
+.pill-closed .pill-barber-state {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.pill-barber-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pill-barber-btn:hover:not(:disabled) {
+  border-color: var(--accent-gold);
   color: #fbbf24;
 }
 </style>

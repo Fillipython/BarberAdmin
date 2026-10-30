@@ -1,9 +1,16 @@
 import { reactive, computed } from 'vue';
 import { api } from '../services/api.js';
 
-const STORAGE_KEY = 'barber_admin_data_v8';
+const STORAGE_KEY = 'barber_admin_data_v9';
 
-const today = new Date().toISOString().split('T')[0];
+export function toLocalIsoDate(d = new Date()) {
+  const yr = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${yr}-${mo}-${da}`;
+}
+
+const today = toLocalIsoDate(new Date());
 
 export const DEFAULT_BARBER_PHOTOS = {
   '8a350074-5524-453d-a625-2b25e7e8ca59': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
@@ -255,11 +262,21 @@ export function normalizeAppointment(a) {
   let schedDate = a.scheduled_date;
   let schedTime = a.scheduled_time || a.timeFormatted;
   if (!schedDate && a.scheduledAt) {
-    schedDate = String(a.scheduledAt).split('T')[0];
+    const parsedDate = new Date(a.scheduledAt);
+    schedDate = !isNaN(parsedDate.getTime())
+      ? toLocalIsoDate(parsedDate)
+      : String(a.scheduledAt).split('T')[0];
   }
   if (!schedTime && a.scheduledAt && String(a.scheduledAt).includes('T')) {
     schedTime = String(a.scheduledAt).split('T')[1].substring(0, 5);
   }
+  const notesStr = a.notes || '';
+  const isDayBlock = Boolean(
+    notesStr.includes('AGENDA_FECHADA') ||
+    a.client_name === 'Agenda Fechada' ||
+    a.clientName === 'Agenda Fechada' ||
+    a.is_day_block
+  );
   return {
     id: a.id,
     client_id: a.client_id ?? a.clientId,
@@ -273,7 +290,9 @@ export function normalizeAppointment(a) {
     scheduled_date: schedDate || today,
     scheduled_time: schedTime || '09:00',
     status: a.status || 'CONFIRMED',
-    payment_method: a.payment_method ?? a.paymentMethod ?? (a.status === 'COMPLETED' ? 'PIX' : null)
+    payment_method: a.payment_method ?? a.paymentMethod ?? (a.status === 'COMPLETED' ? 'PIX' : null),
+    notes: notesStr,
+    is_day_block: isDayBlock
   };
 }
 
@@ -320,6 +339,7 @@ function loadSavedState() {
   loaded.isAuthenticated = Boolean(token && savedUser);
   loaded.token = token || null;
   loaded.currentUser = savedUser || null;
+  loaded.dayBlocks = loaded.dayBlocks || {};
 
   return loaded;
 }
@@ -463,8 +483,12 @@ export function updateAppointmentStatus(id, newStatus, paymentMethod = 'PIX') {
       api.appointments.checkout(id, paymentMethod, app.price_cents).catch(() => {});
     } else {
       api.appointments.updateStatus(id, newStatus).catch(() => {});
+      if (newStatus === 'CANCELLED') {
+        notifyBarberNotifySlotCancel(app.barber_id, app.scheduled_date, app.scheduled_time);
+      }
     }
     saveState();
+    notifySyncChannel?.postMessage('appointment_changed');
   }
 }
 
@@ -488,15 +512,136 @@ export function updateAppointmentService(id, serviceId, serviceName, priceCents)
   }
 }
 
+function resolveBarberNotifyApiBase() {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    if (host.includes('fillipython.ddns.net') || window.location.pathname.startsWith('/BarberAdmin') || (host !== 'localhost' && host !== '127.0.0.1')) {
+      return `${protocol}//${window.location.host}/BarberNotify/api`;
+    }
+  }
+  return 'http://localhost:8081/api';
+}
+
+async function notifyBarberNotifySlotCancel(barberId, dateStr, timeStr) {
+  if (!barberId || !dateStr || !timeStr) return;
+  try {
+    const base = resolveBarberNotifyApiBase();
+    await fetch(`${base}/appointments/by-slot?barberId=${barberId}&date=${dateStr}&time=${encodeURIComponent(timeStr)}`, {
+      method: 'DELETE'
+    });
+  } catch (e) {}
+}
+
+export async function syncDateFromBackend(dateStr) {
+  const targetDate = dateStr || toLocalIsoDate(new Date());
+  try {
+    const notifyBase = resolveBarberNotifyApiBase();
+    const [appointmentsList, blockStatus, notifyBlockRes] = await Promise.all([
+      api.appointments.list(targetDate, null, 'MASTER').catch(() => null),
+      api.appointments.getDayBlockStatus(targetDate).catch(() => null),
+      fetch(`${notifyBase}/appointments/day-block?date=${targetDate}`).then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+
+    if (Array.isArray(appointmentsList)) {
+      const normalizedFromApi = appointmentsList.map(normalizeAppointment);
+      const otherDays = state.appointments.filter(a => a.scheduled_date !== targetDate);
+      state.appointments = [...normalizedFromApi, ...otherDays];
+    }
+
+    const mergedClosedIds = new Set([
+      ...(blockStatus?.closedBarberIds || []),
+      ...(notifyBlockRes?.closedBarberIds || [])
+    ]);
+    const activeStaff = (state.users || []).filter(u => u.is_active !== false);
+    const allClosed = activeStaff.length > 0 && activeStaff.every(u => mergedClosedIds.has(u.id));
+    const shopClosedByMaster = Boolean(blockStatus?.shopClosedByMaster || notifyBlockRes?.shopClosedByMaster);
+
+    state.dayBlocks = {
+      ...state.dayBlocks,
+      [targetDate]: {
+        date: targetDate,
+        shopClosed: Boolean(blockStatus?.shopClosed || notifyBlockRes?.shopClosed || allClosed || shopClosedByMaster),
+        shopClosedByMaster,
+        closedBarberIds: Array.from(mergedClosedIds)
+      }
+    };
+
+    saveState();
+  } catch (e) {
+    console.warn('[BarberAdmin State] Falha ao sincronizar data:', targetDate, e.message);
+  }
+}
+
+export async function closeDaySchedule({ date, barberId = null, closeShop = false }) {
+  const caller = state.currentUser;
+  const callerId = caller ? caller.id : barberId;
+  const callerRole = caller ? caller.role : 'BARBER';
+  const targetDate = date || toLocalIsoDate(new Date());
+  const targetBarberId = closeShop ? null : (barberId || callerId);
+
+  const notifyBase = resolveBarberNotifyApiBase();
+  await Promise.all([
+    api.appointments.closeDay({
+      date: targetDate,
+      barberId: targetBarberId,
+      closeShop,
+      callerId,
+      callerRole
+    }).catch(() => null),
+    fetch(`${notifyBase}/appointments/day-block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: targetDate,
+        barberId: targetBarberId,
+        closeShop
+      })
+    }).catch(() => null)
+  ]);
+
+  await syncDateFromBackend(targetDate);
+  notifySyncChannel?.postMessage('appointment_changed');
+  return state.dayBlocks[targetDate];
+}
+
+export async function reopenDaySchedule({ date, barberId = null, openShop = false }) {
+  const caller = state.currentUser;
+  const callerId = caller ? caller.id : barberId;
+  const callerRole = caller ? caller.role : 'BARBER';
+  const targetDate = date || toLocalIsoDate(new Date());
+  const targetBarberId = openShop ? null : (barberId || callerId);
+
+  const notifyBase = resolveBarberNotifyApiBase();
+  let notifyQuery = `?date=${targetDate}&openShop=${openShop}`;
+  if (targetBarberId) notifyQuery += `&barberId=${targetBarberId}`;
+
+  await Promise.all([
+    api.appointments.reopenDay({
+      date: targetDate,
+      barberId: targetBarberId,
+      openShop,
+      callerId,
+      callerRole
+    }).catch(() => null),
+    fetch(`${notifyBase}/appointments/day-block${notifyQuery}`, {
+      method: 'DELETE'
+    }).catch(() => null)
+  ]);
+
+  await syncDateFromBackend(targetDate);
+  notifySyncChannel?.postMessage('appointment_changed');
+  return state.dayBlocks[targetDate];
+}
+
 // Sincronização automática em segundo plano com a API (incluindo agendamentos vindos do BarberNotify)
 export async function syncFromBackend() {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const [staffList, servicesList, clientsList, appointmentsList] = await Promise.all([
+    const todayStr = toLocalIsoDate(new Date());
+    const [staffList, servicesList, clientsList] = await Promise.all([
       api.staff.list().catch(() => null),
       api.services.list().catch(() => null),
-      api.clients.list().catch(() => null),
-      api.appointments.list(todayStr, null, 'MASTER').catch(() => null)
+      api.clients.list().catch(() => null)
     ]);
 
     if (staffList && staffList.length > 0) {
@@ -518,11 +663,7 @@ export async function syncFromBackend() {
       state.clients = clientsList.map(normalizeClient);
     }
 
-    if (Array.isArray(appointmentsList) && appointmentsList.length > 0) {
-      const normalizedFromApi = appointmentsList.map(normalizeAppointment);
-      const otherDays = state.appointments.filter(a => a.scheduled_date !== todayStr);
-      state.appointments = [...normalizedFromApi, ...otherDays];
-    }
+    await syncDateFromBackend(todayStr);
 
     saveState();
   } catch (err) {

@@ -84,7 +84,18 @@ export const api = {
     checkout: (id, paymentMethod, finalAmountCents, notes = '') => request(`/appointments/${id}/checkout`, {
       method: 'POST',
       body: JSON.stringify({ paymentMethod, finalAmountCents, notes })
-    })
+    }),
+    getDayBlockStatus: (dateStr) => request(`/appointments/day-block?date=${dateStr}`),
+    closeDay: ({ date, barberId = null, closeShop = false, callerId = null, callerRole = 'BARBER' }) => request('/appointments/day-block', {
+      method: 'POST',
+      body: JSON.stringify({ date, barberId, closeShop, callerId, callerRole })
+    }),
+    reopenDay: ({ date, barberId = null, openShop = false, callerId = null, callerRole = 'BARBER' }) => {
+      let q = `?date=${date}&openShop=${openShop}&callerRole=${callerRole}`;
+      if (barberId) q += `&barberId=${barberId}`;
+      if (callerId) q += `&callerId=${callerId}`;
+      return request(`/appointments/day-block${q}`, { method: 'DELETE' });
+    }
   },
 
   // Dashboard Financeiro
